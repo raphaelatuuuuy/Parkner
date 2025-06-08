@@ -18,35 +18,111 @@ import java.time.format.DateTimeFormatter;
  */
 public class bill extends javax.swing.JFrame {
 
-    /**
-     * Creates new form bill
-     */
     Connection conn = new dbConnect().dbcon();
-    public bill() {
+
+    // Add a constructor that accepts referenceId
+    public bill(String referenceId) {
         initComponents();
-        
+
         Statement st;
         ResultSet rs;
-        
-        String pList = "";
-        try{
-            st = (Statement) conn.createStatement();
-            String sql = "SELECT * FROM totalprice";
-            rs = st.executeQuery(sql);
-            
-            while(rs.next()){
-                name.setText("Parking Spot " + rs.getInt("id"));
-                price.setText(rs.getInt("price") + "");
-                vat.setText(rs.getDouble("price")*7/100 + "");
-                total.setText(rs.getInt("price") + ".0");
 
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
-                LocalDateTime now = LocalDateTime.now(); 
-                date.setText("** Date " + now + " **");
+        try {
+            // Get the latest report for this referenceId
+            st = conn.createStatement();
+            String sql = "SELECT id, gen, regis, totalPrice, `change`, reference_id FROM report WHERE reference_id " +
+                         (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
+                         " ORDER BY id DESC LIMIT 1";
+            rs = st.executeQuery(sql);
+
+            if (rs.next()) {
+                int spotId = rs.getInt("id");
+                String carBrand = rs.getString("gen");
+                String licensePlate = rs.getString("regis");
+                double priceValue = rs.getDouble("totalPrice");
+                double vatValue = priceValue * 7 / 100;
+                double totalValue = priceValue;
+                double changeValue = rs.getDouble("change");
+                String refNum = rs.getString("reference_id");
+
+                name.setText("Parking Spot: " + spotId);
+                carBrandLabel.setText("Car Brand: " + carBrand);
+                licenseLabel.setText("License Plate: " + licensePlate);
+
+                // Remove any previous dynamic reference number label
+                for (java.awt.Component comp : jPanel1.getComponents()) {
+                    if (comp instanceof javax.swing.JLabel) {
+                        String txt = ((javax.swing.JLabel) comp).getText();
+                        if (txt != null && txt.startsWith("Reference Number:")) {
+                            jPanel1.remove(comp);
+                            break;
+                        }
+                    }
+                }
+                // Reference Number
+                javax.swing.JLabel refLabel = new javax.swing.JLabel();
+                refLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.BOLD, 13));
+                refLabel.setText("Reference Number: " + (refNum == null ? "N/A" : refNum));
+                jPanel1.add(refLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 320, 20));
+
+                // Move divider further down (after ref num)
+                jPanel2.setBounds(30, 175, 340, 1);
+
+                // Set all values, align right
+                price.setText(String.format("P %.2f", priceValue));
+                price.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                vat.setText(String.format("P %.2f", vatValue));
+                vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                total.setText(String.format("P %.2f", totalValue));
+                total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+
+                // Amount Paid (reuse changeLabel/changeValueLabel)
+                changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                changeLabel.setText("Paid:");
+                changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                changeLabel.setBounds(40, 255, 120, 20);
+
+                changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                changeValueLabel.setText(String.format("P %.2f", priceValue + changeValue));
+                changeValueLabel.setBounds(250, 255, 120, 20);
+
+                // Add a static label for "Change" below Amount Paid
+                javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
+                changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                changeLabel2.setText("Change:");
+                changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 280, 120, 20));
+
+                javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
+                changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                changeValueLabel2.setText(String.format("P %.2f", changeValue));
+                jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 280, 120, 20));
+
+                // Date
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
+                LocalDateTime now = LocalDateTime.now();
+                date.setText("Date: " + dtf.format(now));
+            } else {
+                // Show error if nothing found
+                name.setText("No bill found.");
+                carBrandLabel.setText("");
+                licenseLabel.setText("");
+                price.setText("");
+                vat.setText("");
+                total.setText("");
+                changeValueLabel.setText("");
+                date.setText("");
             }
         } catch(SQLException ex){
             System.out.print(ex);
         }
+    }
+
+    // Default constructor for compatibility
+    public bill() {
+        this(null);
     }
 
     /**
@@ -62,95 +138,108 @@ public class bill extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         name = new javax.swing.JLabel();
-        price = new javax.swing.JLabel();
-        date = new javax.swing.JLabel();
-        jPanel2 = new javax.swing.JPanel();
+        carBrandLabel = new javax.swing.JLabel();
+        licenseLabel = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
+        price = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         vat = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         total = new javax.swing.JLabel();
+        changeLabel = new javax.swing.JLabel();
+        changeValueLabel = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        date = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
-        jLabel1.setText("Receipt");
-        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 30, -1, -1));
+        // Use a classic, readable font for receipts
+        java.awt.Font billHeaderFont = new java.awt.Font("Courier New", java.awt.Font.BOLD, 22);
+        java.awt.Font billSubHeaderFont = new java.awt.Font("Courier New", java.awt.Font.PLAIN, 13);
+        java.awt.Font billLabelFont = new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12);
+        java.awt.Font billBoldFont = new java.awt.Font("Courier New", java.awt.Font.BOLD, 13);
 
-        jLabel2.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        jLabel2.setText("parking payment / VAT included");
-        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 60, -1, -1));
+        // Header
+        jLabel1.setFont(billHeaderFont);
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("PARKING RECEIPT");
+        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 20, 400, 30));
 
-        name.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        name.setText("jLabel3");
-        jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 140, -1, -1));
+        jLabel2.setFont(billLabelFont);
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel2.setText("Thank you for using our parking service!");
+        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 50, 400, 20));
 
-        price.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        price.setText("jLabel4");
-        jPanel1.add(price, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 140, -1, -1));
-
-        date.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        date.setText("jLabel5");
-        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 370, -1, -1));
-
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 10, Short.MAX_VALUE)
-        );
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 390, 400, 10));
-
+        // Divider (move lower, after car details and reference number)
         jPanel3.setBackground(new java.awt.Color(0, 0, 0));
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 170, 340, 2));
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1, Short.MAX_VALUE)
-        );
+        // Parking Spot
+        name.setFont(billBoldFont);
+        name.setText("Parking Spot:");
+        jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, 320, 20));
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 200, 300, 1));
+        // Car Brand
+        carBrandLabel.setFont(billLabelFont);
+        carBrandLabel.setText("Car Brand:");
+        jPanel1.add(carBrandLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 115, 320, 20));
 
-        jLabel3.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        jLabel3.setText("VAT 7%");
-        jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 260, -1, -1));
+        // License Plate
+        licenseLabel.setFont(billLabelFont);
+        licenseLabel.setText("License Plate:");
+        jPanel1.add(licenseLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 135, 320, 20));
 
-        vat.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        vat.setText("jLabel4");
-        jPanel1.add(vat, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 260, -1, -1));
+        // VAT
+        jLabel3.setFont(billLabelFont);
+        jLabel3.setText("VAT 7%:");
+        jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 190, 80, 20));
 
-        jLabel4.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        jLabel4.setText("Total");
-        jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 310, -1, -1));
+        vat.setFont(billLabelFont);
+        vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        vat.setText("P 0.00");
+        jPanel1.add(vat, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 190, 120, 20));
 
-        total.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
-        total.setText("jLabel6");
-        jPanel1.add(total, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 310, -1, -1));
+        // Total
+        jLabel4.setFont(billBoldFont);
+        jLabel4.setText("Total:");
+        jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 215, 80, 20));
+
+        total.setFont(billBoldFont);
+        total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        total.setText("P 0.00");
+        jPanel1.add(total, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 215, 120, 20));
+
+        // Change
+        changeLabel.setFont(billLabelFont);
+        changeLabel.setText("Change:");
+        jPanel1.add(changeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260, 80, 20));
+
+        changeValueLabel.setFont(billLabelFont);
+        changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        changeValueLabel.setText("P 0.00");
+        jPanel1.add(changeValueLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260, 120, 20));
+
+        // Date
+        date.setFont(billSubHeaderFont);
+        date.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        date.setText("Date:");
+        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 300, 400, 20));
+
+        // Receipt border
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180), 2));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 340, Short.MAX_VALUE)
         );
 
         pack();
@@ -192,6 +281,9 @@ public class bill extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel carBrandLabel;
+    private javax.swing.JLabel changeLabel;
+    private javax.swing.JLabel changeValueLabel;
     private javax.swing.JLabel date;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -200,6 +292,7 @@ public class bill extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JLabel licenseLabel;
     private javax.swing.JLabel name;
     private javax.swing.JLabel price;
     private javax.swing.JLabel total;

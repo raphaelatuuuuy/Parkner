@@ -23,6 +23,26 @@ public class receip extends javax.swing.JFrame {
      * Creates new form receip
      */
     Connection conn = new dbConnect().dbcon();
+    private int parkingId;
+    private String carBrand;
+    private String licensePlate;
+    private int totalPrice;
+    private javax.swing.JFrame parentDashboard;
+    private String lastReferenceId = null; // Add this field to store the referenceId
+
+    // New constructor to accept payment details
+    public receip(int parkingId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
+        initComponents();
+        btn_print.setVisible(false);
+        centerFrame();
+        this.parkingId = parkingId;
+        this.carBrand = carBrand;
+        this.licensePlate = licensePlate;
+        this.totalPrice = totalPrice;
+        this.parentDashboard = parentDashboard;
+        price.setText(totalPrice + " pesos");
+    }
+
     public receip() {
         initComponents();
         btn_print.setVisible(false);
@@ -158,30 +178,75 @@ public class receip extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
-        Statement st;
-        ResultSet rs;
-        
-        try{
-            st = (Statement) conn.createStatement();
-            String sql = "SELECT price FROM totalprice";
-            rs = st.executeQuery(sql);
-            
-            while(rs.next()){
-                double receip =  Double.parseDouble(pay.getText()) - rs.getDouble("price");
-                if(receip > 0){
-                    receip_show.setText(receip + "pesos");
-                    btn_print.setVisible(true);
-                } else{
-                    receip_show.setText("Insufficient Amount");
-                }
+        // Validate payment input
+        String payText = pay.getText().trim();
+        double paidAmount = 0;
+        try {
+            paidAmount = Double.parseDouble(payText);
+            if (paidAmount < totalPrice) {
+                receip_show.setText("Insufficient Amount");
+                btn_print.setVisible(false);
+                return;
             }
-        } catch(SQLException ex){
-            System.out.print(ex);
+        } catch (NumberFormatException e) {
+            receip_show.setText("Invalid Amount");
+            btn_print.setVisible(false);
+            return;
+        }
+
+        double change = paidAmount - totalPrice;
+        receip_show.setText(change > 0 ? (change + " pesos") : "0 pesos");
+        btn_print.setVisible(true);
+
+        // Show confirmation dialog
+        int confirm = javax.swing.JOptionPane.showConfirmDialog(this, "Confirm payment?", "Confirm", javax.swing.JOptionPane.YES_NO_OPTION);
+        if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+            Statement st;
+            ResultSet rs;
+            try {
+                // Get the reference_id from parking_store for this parkingId
+                String referenceId = null;
+                String refSql = "SELECT reference_id FROM parking_store WHERE id=" + parkingId;
+                st = conn.createStatement();
+                rs = st.executeQuery(refSql);
+                if (rs.next()) {
+                    referenceId = rs.getString("reference_id");
+                }
+                lastReferenceId = referenceId; // Store for use in bill
+
+                // Update totalPrice table
+                String sql = "UPDATE totalPrice SET id=" + parkingId + ", price=" + totalPrice;
+                st.executeUpdate(sql);
+
+                // Insert into report, now including change value and reference_id
+                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id) VALUES (" + parkingId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " + (referenceId == null ? "NULL" : ("'" + referenceId + "'")) + ")";
+                st.executeUpdate(sql);
+
+                // Update parking_store: clear gen, regis, and reference_id
+                sql = "UPDATE parking_store SET vailable=true, gen='', regis='', reference_id=NULL WHERE id=" + parkingId;
+                st.executeUpdate(sql);
+
+                // Clear fields in parent dashboard if available
+                if (parentDashboard instanceof Main_dashboard) {
+                    Main_dashboard dash = (Main_dashboard) parentDashboard;
+                    dash.sales_id_out.setText("");
+                    dash.sales_gen_out.setText("");
+                    dash.sales_regis_out.setText("");
+                    dash.sales_hours.setText("");
+                    dash.initTableManage();
+                    dash.initTableSales();
+                }
+            } catch (SQLException ex) {
+                System.out.print(ex);
+            }
+        } else {
+            btn_print.setVisible(false);
         }
     }//GEN-LAST:event_jButton1MouseClicked
 
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
-        new bill().setVisible(true);
+        // Pass the lastReferenceId to bill
+        new bill(lastReferenceId).setVisible(true);
         dispose();
     }//GEN-LAST:event_btn_printMouseClicked
 
