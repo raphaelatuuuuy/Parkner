@@ -24,9 +24,12 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
+import javax.swing.UIManager;
+import javax.swing.plaf.FontUIResource;
 import javax.swing.border.EtchedBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -87,7 +90,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         // --- TOTAL REVENUE LABEL: Place at the bottom of Service History panel, always visible ---
         totalRevenueLabel.setText("Total Revenue: 0 pesos");
-        totalRevenueLabel.setFont(new Font("Sarabun", Font.BOLD, 18));
+        totalRevenueLabel.setFont(new Font("Inter", Font.BOLD, 18));
         totalRevenueLabel.setForeground(new Color(115, 12, 22));
         totalRevenueLabel.setOpaque(true);
         totalRevenueLabel.setBackground(new Color(254, 240, 241));
@@ -112,6 +115,44 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_history.add(jScrollPane3);
 
         updateTotalRevenue();
+
+        // Set JOptionPane font to Inter for all dialogs
+        try {
+            UIManager.put("OptionPane.messageFont", new FontUIResource(new Font("Inter", Font.PLAIN, 14)));
+            UIManager.put("OptionPane.buttonFont", new FontUIResource(new Font("Inter", Font.PLAIN, 13)));
+        } catch (Exception e) {
+            // Ignore if Inter is not available
+        }
+
+        // Set icon sizes to 40x40 for all buttons with icons
+        jButton1.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/payment_history.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        jButton2.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/home.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        jButton3.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/parking_slot.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        sales_btnAdd.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/add-car.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        btn_update.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/update.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        btn_delete.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/delete.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        btn_add.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/add-parkingslot.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
+        
+         // --- Add logo.png at the lowermost part of the sidebar ---
+        try {
+            ImageIcon logoIcon = new ImageIcon(
+                new javax.swing.ImageIcon(getClass().getResource("/asset/parkner-logo.png"))
+                    .getImage().getScaledInstance(220, 220, java.awt.Image.SCALE_SMOOTH)
+            );
+            JLabel logoLabel = new JLabel(logoIcon);
+            logoLabel.setHorizontalAlignment(JLabel.CENTER);
+            // Center horizontally, place at the bottom (x= -5 to center in 210px panel, y=410 for 220px logo)
+            jPanel2.add(logoLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(-5, 480, 220, 220));
+
+            // Add credit text just below the logo, centered and a bit higher
+            JLabel creditLabel = new JLabel("@Parkner 2025");
+            creditLabel.setFont(new Font("Inter", Font.ITALIC, 10));
+            creditLabel.setForeground(new Color(255, 255, 255));
+            creditLabel.setHorizontalAlignment(JLabel.CENTER);
+            jPanel2.add(creditLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 600, 210, 20));
+        } catch (Exception e) {
+            // If logo not found, do nothing
+        }
     }
     
     public void initTableManage(){
@@ -141,9 +182,12 @@ public class Main_dashboard extends javax.swing.JFrame {
         JTableHeader theader = table_manage.getTableHeader();
         theader.setBackground(new Color(115,12,22));
         theader.setForeground(Color.white);
-        theader.setFont(new Font("Sarabun", Font.PLAIN, 18));
+        theader.setFont(new Font("Inter", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createBevelBorder(EtchedBorder.RAISED, new Color(115,12,22), new Color(115,12,22)));
-        
+
+        // Change column header to "Parking Slot"
+        table_manage.getColumnModel().getColumn(0).setHeaderValue("Parking Slot");
+        table_manage.getColumnModel().getColumn(1).setHeaderValue("Status");
         
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment( JLabel.CENTER );
@@ -151,7 +195,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         table_manage.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         
         table_manage.setRowHeight(30);
-        table_manage.setFont(new Font("Sarabun", Font.PLAIN, 16));
+        table_manage.setFont(new Font("Inter", Font.PLAIN, 16));
     }
     
     public void initTableSales(){
@@ -161,7 +205,8 @@ public class Main_dashboard extends javax.swing.JFrame {
         sales_combo.removeAllItems();
         model.setRowCount(0);
         manage_num_row = 1;
-        // Do NOT clear runningTimeMap here to preserve running times for existing cars
+        // Clear runningTimeMap to avoid showing running time for cleared spots
+        runningTimeMap.clear();
 
         Statement st;
         ResultSet rs;
@@ -222,7 +267,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         JTableHeader theader = table_sales.getTableHeader();
         theader.setBackground(new Color(115,12,22));
         theader.setForeground(Color.white);
-        theader.setFont(new Font("Sarabun", Font.PLAIN, 18));
+        theader.setFont(new Font("Inter", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createBevelBorder(EtchedBorder.RAISED, new Color(115,12,22), new Color(115,12,22)));
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -232,7 +277,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
 
         table_sales.setRowHeight(30);
-        table_sales.setFont(new Font("Sarabun", Font.PLAIN, 16));
+        table_sales.setFont(new Font("Inter", Font.PLAIN, 16));
     }
     
     // Add this method to format running time
@@ -298,7 +343,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         JTableHeader theader = table_history.getTableHeader();
         theader.setBackground(new Color(115,12,22));
         theader.setForeground(Color.white);
-        theader.setFont(new Font("Sarabun", Font.PLAIN, 18));
+        theader.setFont(new Font("Inter", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createBevelBorder(EtchedBorder.RAISED, new Color(115,12,22), new Color(115,12,22)));
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -308,7 +353,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
 
         table_history.setRowHeight(30);
-        table_history.setFont(new Font("Sarabun", Font.PLAIN, 16));
+        table_history.setFont(new Font("Inter", Font.PLAIN, 16));
         
         updateTotalRevenue(); // Update revenue after loading history
     }
@@ -386,20 +431,27 @@ public class Main_dashboard extends javax.swing.JFrame {
         jPanel2.setBackground(new java.awt.Color(115, 12, 22));
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setFont(new java.awt.Font("Arial Black", 0, 24)); // NOI18N
+        // Eye-catching application name
+        jLabel1.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 32)); // Larger, bold
         jLabel1.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel1.setText("PARKING");
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 20, 130, -1));
+        jLabel1.setText("PARKNER");
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 10, 0, 0)); // Padding left
+        // Optionally, add a subtle shadow effect (simulate with a second label if desired)
+        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 20, 200, 40));
 
-        jLabel2.setFont(new java.awt.Font("Arial Black", 0, 12)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(204, 204, 204));
-        jLabel2.setText("Management System");
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 60, 150, -1));
+        // Tagline styling
+        jLabel2.setFont(new java.awt.Font("Inter", java.awt.Font.ITALIC, 14)); // Italic, smaller
+        jLabel2.setForeground(new java.awt.Color(220, 220, 220)); // Lighter gray
+        jLabel2.setText("Your Partner in Parking");
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabel2.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 12, 0, 0)); // Padding left
+        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 200, 20));
 
         jButton1.setBackground(new java.awt.Color(152, 16, 30));
-        jButton1.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jButton1.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_payment_history_100px.png"))); // NOI18N
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/payment_history.png"))); // NOI18N
         jButton1.setText("Service History");
         jButton1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jButton1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -412,9 +464,9 @@ public class Main_dashboard extends javax.swing.JFrame {
         jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 360, 190, 50));
 
         jButton2.setBackground(new java.awt.Color(152, 16, 30));
-        jButton2.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jButton2.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_home_64px.png"))); // NOI18N
+        jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/home.png"))); // NOI18N
         jButton2.setText("Dashboard");
         jButton2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jButton2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -427,10 +479,10 @@ public class Main_dashboard extends javax.swing.JFrame {
         jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 160, 190, 50));
 
         jButton3.setBackground(new java.awt.Color(152, 16, 30));
-        jButton3.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jButton3.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jButton3.setForeground(new java.awt.Color(255, 255, 255));
-        jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_google_tag_manager_100px.png"))); // NOI18N
-        jButton3.setText("Parking Spot");
+        jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/parking_slot.png"))); // NOI18N
+        jButton3.setText("Parking Slot");
         jButton3.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jButton3.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jButton3.setFocusPainted(false);
@@ -441,10 +493,34 @@ public class Main_dashboard extends javax.swing.JFrame {
         });
         jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 260, 190, 50));
 
-        jLabel13.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        // Move and style the Parking Fee label to the leftmost side
+        jLabel13.setFont(new java.awt.Font("Inter", java.awt.Font.PLAIN, 14));
         jLabel13.setForeground(new java.awt.Color(255, 255, 255));
         jLabel13.setText("Parking fee 50 pesos/hour");
-        jPanel2.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 110, -1, -1));
+        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabel13.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        jPanel2.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 110, 180, 20));
+
+        // --- Add logo.png at the lowermost part of the sidebar ---
+        try {
+            ImageIcon logoIcon = new ImageIcon(
+                new javax.swing.ImageIcon(getClass().getResource("/asset/logo.png"))
+                    .getImage().getScaledInstance(220, 220, java.awt.Image.SCALE_SMOOTH)
+            );
+            JLabel logoLabel = new JLabel(logoIcon);
+            logoLabel.setHorizontalAlignment(JLabel.CENTER);
+            // Center horizontally, place at the bottom (x= -5 to center in 210px panel, y=410 for 220px logo)
+            jPanel2.add(logoLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(-5, 410, 220, 220));
+
+            // Add credit text just below the logo, centered and a bit higher
+            JLabel creditLabel = new JLabel("@Parkner 2025");
+            creditLabel.setFont(new Font("Inter", Font.PLAIN, 13));
+            creditLabel.setForeground(new Color(255, 255, 255));
+            creditLabel.setHorizontalAlignment(JLabel.CENTER);
+            jPanel2.add(creditLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 630, 210, 20));
+        } catch (Exception e) {
+            // If logo not found, do nothing
+        }
 
         main_panel.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 210, 650));
 
@@ -474,7 +550,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Parking Spot", "License Plate", "Car Brand", "Time In", "Running Time"
+                "Parking Slot", "License Plate", "Car Brand", "Time In", "Running Time"
             }
         ));
         table_sales.setAlignmentX(0.0F);
@@ -497,38 +573,39 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         panel_sales.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 440, 630));
 
-        sales_gen.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_gen.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_gen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_gen, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 90, 100, -1));
 
-        sales_regis.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_regis.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_regis.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_regis, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 140, 100, -1));
 
-        jLabel4.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        // Bold "Add Car to Park"
+        jLabel4.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 18)); // Bold
         jLabel4.setText("Add Car to Park");
         panel_sales.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 30, -1, -1));
 
-        jLabel5.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jLabel5.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jLabel5.setText("Car Brand");
         panel_sales.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 90, -1, -1));
 
-        jLabel6.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
-        jLabel6.setText("Parking Spot");
+        jLabel6.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
+        jLabel6.setText("Parking Slot");
         panel_sales.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 190, -1, -1));
 
-        jLabel8.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jLabel8.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jLabel8.setText("License Plate");
         panel_sales.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 140, -1, -1));
 
-        sales_combo.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_combo.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         panel_sales.add(sales_combo, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 190, 100, -1));
 
         sales_btnAdd.setBackground(new java.awt.Color(115, 12, 22));
-        sales_btnAdd.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
+        sales_btnAdd.setFont(new java.awt.Font("Inter", 0, 12)); // NOI18N
         sales_btnAdd.setForeground(new java.awt.Color(255, 255, 255));
-        sales_btnAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_add_48px_1.png"))); // NOI18N
-        sales_btnAdd.setText(" Add Parked Car");
+        sales_btnAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/add-car.png"))); // NOI18N
+        sales_btnAdd.setText("Add Parked Car");
         sales_btnAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         sales_btnAdd.setFocusPainted(false);
         sales_btnAdd.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -553,55 +630,59 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         panel_sales.add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 330, 250, 5));
 
-        jLabel9.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
-        jLabel9.setText("Return Car");
-        panel_sales.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 350, -1, -1));
+        // Bold and center "Pay & Exit"
+        jLabel9.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 18)); // Bold
+        jLabel9.setText("Pay & Exit");
+        jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        panel_sales.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 350, 250, -1));
 
-        jLabel10.setFont(new java.awt.Font("Sarabun", 1, 12)); // NOI18N
+        jLabel10.setFont(new java.awt.Font("Inter", 1, 12)); // NOI18N
         jLabel10.setText("Enter Number of Hours");
         panel_sales.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 530, -1, -1));
 
-        sales_hours.setFont(new java.awt.Font("Sarabun", 1, 14)); // NOI18N
+        sales_hours.setFont(new java.awt.Font("Inter", 1, 14)); // NOI18N
         sales_hours.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_hours, new org.netbeans.lib.awtextra.AbsoluteConstraints(610, 520, 60, 30));
 
         sales_btn_pay.setBackground(new java.awt.Color(0, 204, 0));
-        sales_btn_pay.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_btn_pay.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_btn_pay.setForeground(new java.awt.Color(255, 255, 255));
         sales_btn_pay.setText("Pay");
         sales_btn_pay.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         sales_btn_pay.setFocusPainted(false);
+        // Add icon for payment button (scaled 40x40)
+        sales_btn_pay.setIcon(new ImageIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/payment.png")).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
         sales_btn_pay.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 sales_btn_payMouseClicked(evt);
             }
         });
-        panel_sales.add(sales_btn_pay, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 570, 100, 40));
+        panel_sales.add(sales_btn_pay, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 570, 110, 40));
 
-        jLabel11.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
-        jLabel11.setText("Parking Spot");
+        jLabel11.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
+        jLabel11.setText("Parking Slot");
         panel_sales.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 400, -1, -1));
 
-        jLabel12.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jLabel12.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jLabel12.setText("License Plate");
         panel_sales.add(jLabel12, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 480, -1, -1));
 
         sales_regis_out.setEditable(false);
-        sales_regis_out.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_regis_out.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_regis_out.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_regis_out, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 480, 100, -1));
 
         sales_id_out.setEditable(false);
-        sales_id_out.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_id_out.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_id_out.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_id_out, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 400, 100, -1));
 
-        jLabel14.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jLabel14.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jLabel14.setText("Car Brand");
         panel_sales.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 440, -1, -1));
 
         sales_gen_out.setEditable(false);
-        sales_gen_out.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        sales_gen_out.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         sales_gen_out.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         panel_sales.add(sales_gen_out, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 440, 100, -1));
 
@@ -613,13 +694,13 @@ public class Main_dashboard extends javax.swing.JFrame {
         jScrollPane3.setBorder(null);
 
         table_history.setBackground(new java.awt.Color(254, 240, 241));
-        table_history.setFont(new java.awt.Font("Sarabun", 0, 11)); // NOI18N
+        table_history.setFont(new java.awt.Font("Inter", 0, 11)); // NOI18N
         table_history.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
-                "Parking Spot", "Car Brand", "License Plate", "Amount Paid", "Time In", "Time Out"
+                "Parking Slot", "Car Brand", "License Plate", "Amount Paid", "Time In", "Time Out"
             }
         ));
         table_history.setAlignmentX(0.0F);
@@ -651,13 +732,13 @@ public class Main_dashboard extends javax.swing.JFrame {
         jScrollPane1.setOpaque(false);
 
         table_manage.setBackground(new java.awt.Color(254, 240, 241));
-        table_manage.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        table_manage.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         table_manage.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
-                "Parking Spot", "Status"
+                "Parking Slot", "Status"
             }
         ));
         table_manage.setToolTipText("");
@@ -686,10 +767,10 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_manage.add(manage_update, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 150, 210, 220));
 
         btn_update.setBackground(new java.awt.Color(115, 12, 22));
-        btn_update.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
+        btn_update.setFont(new java.awt.Font("Inter", 0, 12)); // NOI18N
         btn_update.setForeground(new java.awt.Color(255, 255, 255));
-        btn_update.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_update_left_rotation_64px.png"))); // NOI18N
-        btn_update.setText("Edit Parking Status");
+        btn_update.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/update.png"))); // NOI18N
+        btn_update.setText("Edit Parking Slot Status");
         btn_update.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         btn_update.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn_update.setFocusPainted(false);
@@ -700,13 +781,13 @@ public class Main_dashboard extends javax.swing.JFrame {
         });
         panel_manage.add(btn_update, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 230, 190, 50));
 
-        jLabel3.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        jLabel3.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(115, 12, 22));
         jLabel3.setText("Status");
         panel_manage.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 170, -1, -1));
 
         combo.setBackground(new java.awt.Color(115, 12, 22));
-        combo.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        combo.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         combo.setForeground(new java.awt.Color(255, 255, 255));
         combo.setBorder(null);
         combo.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -716,10 +797,10 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_manage.add(combo, new org.netbeans.lib.awtextra.AbsoluteConstraints(550, 160, 120, 40));
 
         btn_delete.setBackground(new java.awt.Color(115, 12, 22));
-        btn_delete.setFont(new java.awt.Font("Sarabun", 0, 12)); // NOI18N
+        btn_delete.setFont(new java.awt.Font("Inter", 0, 12)); // NOI18N
         btn_delete.setForeground(new java.awt.Color(255, 255, 255));
-        btn_delete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_delete_64px.png"))); // NOI18N
-        btn_delete.setText("Delete Parking Spot");
+        btn_delete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/delete.png"))); // NOI18N
+        btn_delete.setText("Delete Parking Slot");
         btn_delete.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         btn_delete.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn_delete.setFocusPainted(false);
@@ -731,10 +812,10 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_manage.add(btn_delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 300, 190, 50));
 
         btn_add.setBackground(new java.awt.Color(115, 12, 22));
-        btn_add.setFont(new java.awt.Font("Sarabun", 0, 14)); // NOI18N
+        btn_add.setFont(new java.awt.Font("Inter", 0, 14)); // NOI18N
         btn_add.setForeground(new java.awt.Color(255, 255, 255));
-        btn_add.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons8_add_48px_1.png"))); // NOI18N
-        btn_add.setText("Add Parking Spot");
+        btn_add.setIcon(new javax.swing.ImageIcon(getClass().getResource("/asset/icons/add.png"))); // NOI18N
+        btn_add.setText("Add Parking Slot");
         btn_add.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         btn_add.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn_add.setFocusPainted(false);
@@ -811,7 +892,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             initTableManage();
             initTableSales();
             // Show dialog for edit action
-            JOptionPane.showMessageDialog(this, "Parking spot " + manage_selected + " status updated to '" + combo.getSelectedItem() + "'.", "Edit Parking Spot", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Parking slot " + manage_selected + " status updated to '" + combo.getSelectedItem() + "'.", "Edit Parking Slot", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -840,7 +921,7 @@ public class Main_dashboard extends javax.swing.JFrame {
                 pt = conn.prepareStatement(sql);
                 pt.execute();
                 // Show dialog for delete action
-                JOptionPane.showMessageDialog(this, "Parking spot " + manage_selected + " has been deleted.", "Delete Parking Spot", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Parking slot " + manage_selected + " has been deleted.", "Delete Parking Slot", JOptionPane.INFORMATION_MESSAGE);
             } catch(SQLException ex){
                 System.out.print(ex);
             }
@@ -934,8 +1015,8 @@ public class Main_dashboard extends javax.swing.JFrame {
                         btn_delete.setEnabled(false);
                         combo.setEnabled(false);
                         JOptionPane.showMessageDialog(this, 
-                            "A car is parked here. Please accomplish the payment first before editing or deleting the parking spot.", 
-                            "Edit/Delete Not Allowed", 
+                            "A car is parked here. Please accomplish the payment first before editing or deleting the parking slot.",
+                            "Edit/Delete Not Allowed",
                             JOptionPane.WARNING_MESSAGE);
                     }
                 } else {
@@ -962,7 +1043,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             initTableManage();
             initTableSales();
             // Show dialog for add action
-            JOptionPane.showMessageDialog(this, "Parking spot " + (manage_num_row - 1) + " has been added.", "Add Parking Spot", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Parking slot " + (manage_num_row - 1) + " has been added.", "Add Parking Slot", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -977,9 +1058,9 @@ public class Main_dashboard extends javax.swing.JFrame {
         return;
     }
 
-    // Require user to select a parking spot from combo box
+    // Require user to select a parking slot from combo box
     if (sales_combo.getSelectedItem() == null) {
-        JOptionPane.showMessageDialog(this, "Please select a parking spot.", "No Parking Spot Selected", JOptionPane.WARNING_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Please select a parking slot.", "No Parking Slot Selected", JOptionPane.WARNING_MESSAGE);
         return;
     }
     int selectCombo = Integer.parseInt(sales_combo.getSelectedItem().toString());
@@ -1010,7 +1091,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     String confirmMsg = "Please confirm the following details:\n"
             + "Car Brand: " + carBrand + "\n"
             + "License Plate: " + licensePlate + "\n"
-            + "Parking Spot: " + selectCombo + "\n"
+            + "Parking Slot: " + selectCombo + "\n"
             + "Is this information correct?";
     int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
@@ -1021,7 +1102,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             pt.execute();
             initTableManage();
             initTableSales();
-            JOptionPane.showMessageDialog(this, "Car parked successfully at spot " + selectCombo + ".\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Car parked successfully at slot " + selectCombo + ".\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -1056,7 +1137,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
                 // Disable return car fields if not occupied
                 setReturnCarFieldsEnabled(false);
-                // Show new dialog when user clicks on an available spot
+                // Show new dialog when user clicks on an available slot
                 JOptionPane.showMessageDialog(this, "Please add a car first. To return", "No Car Selected", JOptionPane.WARNING_MESSAGE);
             }
         } catch (SQLException ex) {
@@ -1110,6 +1191,17 @@ public class Main_dashboard extends javax.swing.JFrame {
             String sql = "UPDATE parking_store SET vailable=true, gen='', regis='', time_in='', reference_id='' WHERE id=" + id;
             PreparedStatement pt = conn.prepareStatement(sql);
             pt.execute();
+            // Remove running time entry for this id
+            runningTimeMap.remove(id);
+            // Also clear the running time cell in the table immediately
+            DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+            for (int row = 0; row < model.getRowCount(); row++) {
+                Object spotId = model.getValueAt(row, 0);
+                if (spotId instanceof Integer && ((Integer) spotId) == id) {
+                    model.setValueAt("", row, 4); // Clear "Running Time" column
+                    break;
+                }
+            }
             initTableManage();
             initTableSales();
             // Optionally clear the output fields

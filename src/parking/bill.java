@@ -58,7 +58,7 @@ public class bill extends javax.swing.JFrame {
                 String timeIn = rs.getString("time_in");
                 String timeOut = rs.getString("time_out");
 
-                name.setText("Parking Spot: " + spotId);
+                name.setText("Parking Slot: " + spotId);
                 carBrandLabel.setText("Car Brand: " + carBrand);
                 licenseLabel.setText("License Plate: " + licensePlate);
 
@@ -81,12 +81,8 @@ public class bill extends javax.swing.JFrame {
                         long totalSeconds = diffMs / 1000;
                         long hrs = totalSeconds / 3600;
                         long mins = (totalSeconds % 3600) / 60;
-                        long secs = totalSeconds % 60;
-                        StringBuilder sb = new StringBuilder();
-                        if (hrs > 0) sb.append(hrs).append("hr ");
-                        if (mins > 0 || hrs > 0) sb.append(mins).append("min ");
-                        sb.append(secs).append("s");
-                        totalTimeStr = sb.toString().trim();
+                        // Format: "1hr 5min" or "0hr 30min"
+                        totalTimeStr = String.format("%dhr %dmin", hrs, mins);
                     } catch (ParseException e) {
                         totalTimeStr = "N/A";
                     }
@@ -240,7 +236,7 @@ public class bill extends javax.swing.JFrame {
 
         // Parking Spot
         name.setFont(billBoldFont);
-        name.setText("Parking Spot:");
+        name.setText("Parking Slot:");
         jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, 320, 20));
 
         // Car Brand

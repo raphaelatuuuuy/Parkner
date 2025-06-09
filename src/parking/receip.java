@@ -102,18 +102,18 @@ public class receip extends javax.swing.JFrame {
         jPanel1.setBackground(new java.awt.Color(115, 12, 22));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        jLabel1.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(255, 255, 255));
         jLabel1.setText("Enter Amount Paid");
         jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 100, -1, -1));
 
-        pay.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        pay.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         pay.setText("  ");
         pay.setBorder(null);
         jPanel1.add(pay, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 100, 120, 30));
 
         jButton1.setBackground(new java.awt.Color(152, 16, 30));
-        jButton1.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        jButton1.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jButton1.setForeground(new java.awt.Color(255, 255, 255));
         jButton1.setText("Confirm");
         jButton1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -124,16 +124,16 @@ public class receip extends javax.swing.JFrame {
         });
         jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 160, 110, -1));
 
-        jLabel2.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        jLabel2.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setText("Change");
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 250, -1, -1));
 
-        receip_show.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        receip_show.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         receip_show.setForeground(new java.awt.Color(51, 204, 0));
         jPanel1.add(receip_show, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 250, 180, 30));
 
-        btn_print.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        btn_print.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         btn_print.setText("Print Receipt");
         btn_print.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -155,12 +155,12 @@ public class receip extends javax.swing.JFrame {
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 360, 400, 40));
 
-        jLabel3.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        jLabel3.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("Amount Due");
         jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 30, -1, -1));
 
-        price.setFont(new java.awt.Font("Sarabun", 0, 18)); // NOI18N
+        price.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         price.setForeground(new java.awt.Color(255, 0, 51));
         jPanel1.add(price, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 30, 120, 30));
 
