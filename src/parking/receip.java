@@ -20,6 +20,18 @@ import java.text.SimpleDateFormat;
  */
 public class receip extends javax.swing.JFrame {
 
+    // --- Color Palette ---
+    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0); // #E6B400
+    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);   // #D4A300
+    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);    // #FAFAFA
+    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);     // #141414
+    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);  // #333333
+    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242); // #F2F2F2
+    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71); // #43A047
+    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0); // #FF9100
+    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);     // #D32F2F
+    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189); // #BDBDBD
+
     /**
      * Creates new form receip
      */
@@ -163,6 +175,21 @@ public class receip extends javax.swing.JFrame {
         price.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         price.setForeground(new java.awt.Color(255, 0, 51));
         jPanel1.add(price, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 30, 120, 30));
+
+        // --- Apply new color palette ---
+        jPanel1.setBackground(COLOR_BG_WHITE);
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
+        jLabel1.setForeground(COLOR_TEXT_BLACK);
+        jLabel2.setForeground(COLOR_ACCENT_GOLD);
+        jLabel3.setForeground(COLOR_TEXT_BLACK);
+        price.setForeground(COLOR_ERROR_RED);
+        pay.setBackground(COLOR_PANEL_LIGHTGRAY);
+        pay.setForeground(COLOR_TEXT_BLACK);
+        jButton1.setBackground(COLOR_PRIMARY_YELLOW);
+        jButton1.setForeground(COLOR_TEXT_BLACK);
+        btn_print.setBackground(COLOR_ACCENT_GOLD);
+        btn_print.setForeground(COLOR_TEXT_BLACK);
+        receip_show.setForeground(COLOR_SUCCESS_GREEN);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);

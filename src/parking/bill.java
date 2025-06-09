@@ -20,6 +20,18 @@ import java.time.format.DateTimeFormatter;
  */
 public class bill extends javax.swing.JFrame {
 
+    // --- Color Palette ---
+    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0); // #E6B400
+    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);   // #D4A300
+    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);    // #FAFAFA
+    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);     // #141414
+    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);  // #333333
+    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242); // #F2F2F2
+    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71); // #43A047
+    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0); // #FF9100
+    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);     // #D32F2F
+    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189); // #BDBDBD
+
     Connection conn = new dbConnect().dbcon();
 
     // Add dynamic labels as class fields
@@ -219,6 +231,30 @@ public class bill extends javax.swing.JFrame {
         java.awt.Font billLabelFont = new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12);
         java.awt.Font billBoldFont = new java.awt.Font("Courier New", java.awt.Font.BOLD, 13);
 
+        // --- Apply new color palette ---
+        jPanel1.setBackground(COLOR_BG_WHITE);
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
+        jLabel1.setForeground(COLOR_PRIMARY_YELLOW);
+        jLabel2.setForeground(COLOR_TEXT_DARKGRAY);
+        name.setForeground(COLOR_TEXT_BLACK);
+        carBrandLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        licenseLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        refLabel.setForeground(COLOR_ACCENT_GOLD);
+        timeInLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        timeInValue.setForeground(COLOR_TEXT_BLACK);
+        timeOutLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        timeOutValue.setForeground(COLOR_TEXT_BLACK);
+        totalTimeLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        totalTimeValue.setForeground(COLOR_TEXT_BLACK);
+        jLabel3.setForeground(COLOR_TEXT_DARKGRAY);
+        vat.setForeground(COLOR_TEXT_BLACK);
+        jLabel4.setForeground(COLOR_TEXT_BLACK);
+        total.setForeground(COLOR_TEXT_BLACK);
+        changeLabel.setForeground(COLOR_TEXT_DARKGRAY);
+        changeValueLabel.setForeground(COLOR_TEXT_BLACK);
+        date.setForeground(COLOR_TEXT_DARKGRAY);
+        jPanel3.setBackground(COLOR_BORDER_GRAY);
+
         // Header
         jLabel1.setFont(billHeaderFont);
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -231,7 +267,7 @@ public class bill extends javax.swing.JFrame {
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 50, 400, 20));
 
         // Divider (move lower, after car details and reference number)
-        jPanel3.setBackground(new java.awt.Color(0, 0, 0));
+        // jPanel3.setBackground(new java.awt.Color(0, 0, 0)); // replaced above
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 170, 340, 2));
 
         // Parking Spot
@@ -298,9 +334,6 @@ public class bill extends javax.swing.JFrame {
         date.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         date.setText("Date:");
         jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 370, 400, 20));
-
-        // Receipt border
-        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180), 2));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
