@@ -70,7 +70,8 @@ public class bill extends javax.swing.JFrame {
                 String timeIn = rs.getString("time_in");
                 String timeOut = rs.getString("time_out");
 
-                name.setText("Parking Slot: " + spotId);
+                // name.setText("Parking Slot: " + spotId); // REMOVE this line
+                name.setText(""); // Hide parking slot
                 carBrandLabel.setText("Car Brand: " + carBrand);
                 licenseLabel.setText("License Plate: " + licensePlate);
 
@@ -142,7 +143,7 @@ public class bill extends javax.swing.JFrame {
                 date.setText("Date: " + dtf.format(now));
             } else {
                 // Show error if nothing found
-                name.setText("No bill found.");
+                name.setText(""); // Hide parking slot even if not found
                 carBrandLabel.setText("");
                 licenseLabel.setText("");
                 price.setText("");
@@ -272,8 +273,8 @@ public class bill extends javax.swing.JFrame {
 
         // Parking Spot
         name.setFont(billBoldFont);
-        name.setText("Parking Slot:");
-        jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, 320, 20));
+        // name.setText("Parking Slot:"); // REMOVE this line
+        // jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, 320, 20)); // REMOVE this line
 
         // Car Brand
         carBrandLabel.setFont(billLabelFont);

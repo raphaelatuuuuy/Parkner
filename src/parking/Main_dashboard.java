@@ -76,6 +76,9 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Add this field to store computed hours for payment
     private int computedHours = 1;
 
+    // Add this field to show available slots
+    private javax.swing.JLabel availableSlotsLabel = new javax.swing.JLabel();
+
     public Main_dashboard() {
         initComponents();
         initTableSales();
@@ -103,7 +106,7 @@ public class Main_dashboard extends javax.swing.JFrame {
                 }
             }
         });
-        startRunningTimeTimer();
+        // startRunningTimeTimer(); // Moved to the end of the constructor
 
         // --- TOTAL REVENUE LABEL: Place at the bottom of Service History panel, always visible ---
         totalRevenueLabel.setText("Total Revenue: 0 pesos");
@@ -263,6 +266,30 @@ public class Main_dashboard extends javax.swing.JFrame {
         table_history.setSelectionBackground(COLOR_TABLE_SELECTION);
         table_history.setSelectionForeground(COLOR_TEXT_BLACK);
 
+        // Hide the "Parking Slot" column (index 0) in table_sales
+        if (table_sales.getColumnModel().getColumnCount() > 0) {
+            table_sales.getColumnModel().getColumn(0).setMinWidth(0);
+            table_sales.getColumnModel().getColumn(0).setMaxWidth(0);
+            table_sales.getColumnModel().getColumn(0).setWidth(0);
+        }
+
+        // --- DO NOT HIDE the "Parking Slot" column in table_manage ---
+        // (Remove or comment out the following block to keep the column visible)
+        /*
+        if (table_manage.getColumnModel().getColumnCount() > 0) {
+            table_manage.getColumnModel().getColumn(0).setMinWidth(0);
+            table_manage.getColumnModel().getColumn(0).setMaxWidth(0);
+            table_manage.getColumnModel().getColumn(0).setWidth(0);
+        }
+        */
+
+        // Hide the "Parking Slot" column (index 0) in table_history
+        if (table_history.getColumnModel().getColumnCount() > 0) {
+            table_history.getColumnModel().getColumn(0).setMinWidth(0);
+            table_history.getColumnModel().getColumn(0).setMaxWidth(0);
+            table_history.getColumnModel().getColumn(0).setWidth(0);
+        }
+
         // Alternate row color for tables (including history table)
         DefaultTableCellRenderer altRowRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -296,6 +323,114 @@ public class Main_dashboard extends javax.swing.JFrame {
         revenuePanel.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
 
         // --- END OF COLOR PALETTE ---
+    }
+    
+    public void initTableSales(){
+        DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+        // Remove combo box for slot selection
+        sales_combo.setVisible(false);
+        model.setRowCount(0);
+        manage_num_row = 1;
+        runningTimeMap.clear();
+
+        Statement st;
+        ResultSet rs;
+
+        int availableSlotCount = 0;
+        try{
+            st = (Statement) conn.createStatement();
+            String sql = "SELECT * FROM parking_store";
+            rs = st.executeQuery(sql);
+            while(rs.next()){
+                int id = rs.getInt("id");
+                String regis = rs.getString("regis");
+                String gen = rs.getString("gen");
+                String timeInStr = rs.getString("time_in");
+                boolean vailable = rs.getBoolean("vailable");
+                // Only display rows where slot is NOT available (i.e., has a car parked)
+                // And only if car details are present (not empty)
+                if (!vailable && gen != null && !gen.trim().isEmpty() && regis != null && !regis.trim().isEmpty()) {
+                    String runningTime = "";
+                    java.util.Date timeInDate = null;
+                    if (timeInStr != null && !timeInStr.trim().isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
+                            java.util.Date parsedTime = sdf.parse(timeInStr);
+                            java.util.Calendar cal = java.util.Calendar.getInstance();
+                            java.util.Calendar now = java.util.Calendar.getInstance();
+                            cal.setTime(parsedTime);
+                            // Set the date part to today
+                            cal.set(now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH), now.get(java.util.Calendar.DAY_OF_MONTH));
+                            timeInDate = cal.getTime();
+                            long diff = System.currentTimeMillis() - timeInDate.getTime();
+                            if (diff < 0) {
+                                diff += 24 * 60 * 60 * 1000;
+                            }
+                            long totalMinutes = diff / (60 * 1000);
+                            long hrs = totalMinutes / 60;
+                            long mins = totalMinutes % 60;
+                            runningTime = String.format("%02d:%02d", hrs, mins);
+                            runningTimeMap.put(id, timeInDate);
+                        } catch (Exception e) {
+                            runningTime = "";
+                        }
+                    }
+                    model.addRow(new Object[]{
+                        id,
+                        regis,
+                        gen,
+                        timeInStr,
+                        runningTime
+                    });
+                    // Do not increment manage_num_row here, as it's not used for table_sales display
+                }
+                if(vailable) {
+                    availableSlotCount++;
+                }
+            }
+        } catch(SQLException ex){
+            System.out.print(ex);
+        }
+
+        // Remove any rows that have empty car details (safety, in case)
+        for (int i = model.getRowCount() - 1; i >= 0; i--) {
+            String regis = (String) model.getValueAt(i, 1);
+            String gen = (String) model.getValueAt(i, 2);
+            if (regis == null || regis.trim().isEmpty() || gen == null || gen.trim().isEmpty()) {
+                model.removeRow(i);
+            }
+        }
+
+        // Update available slots label
+        availableSlotsLabel.setText("Available Slots: " + availableSlotCount);
+
+        // Only disable the button here, do not show dialog
+        if (availableSlotCount == 0) {
+            sales_btnAdd.setEnabled(false);
+        } else {
+            sales_btnAdd.setEnabled(true);
+        }
+
+        //Header column
+        JTableHeader theader = table_sales.getTableHeader();
+        theader.setBackground(COLOR_PRIMARY_YELLOW);
+        theader.setForeground(COLOR_TEXT_BLACK);
+        theader.setFont(new Font("Inter", Font.PLAIN, 18));
+        theader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
+        // Center header text
+        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) theader.getDefaultRenderer();
+        headerRenderer.setHorizontalAlignment(JLabel.CENTER);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+        for (int i = 0; i < table_sales.getColumnCount(); i++) {
+            table_sales.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        table_sales.setRowHeight(30);
+        table_sales.setFont(new Font("Inter", Font.PLAIN, 16));
+        // Apply alternate row renderer after updating model
+        applyAlternateRowRenderer(table_sales);
     }
     
     public void initTableManage(){
@@ -344,137 +479,6 @@ public class Main_dashboard extends javax.swing.JFrame {
         table_manage.setFont(new Font("Inter", Font.PLAIN, 16));
         // Apply alternate row renderer after updating model
         applyAlternateRowRenderer(table_manage);
-    }
-    
-    public void initTableSales(){
-        DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-        // Show the combo box for parking spot selection again
-        sales_combo.setVisible(true);
-        sales_combo.removeAllItems();
-        model.setRowCount(0);
-        manage_num_row = 1;
-        // Clear runningTimeMap to avoid showing running time for cleared spots
-        runningTimeMap.clear();
-
-        Statement st;
-        ResultSet rs;
-
-        boolean hasAvailableSlot = false; // Track if any slot is available
-
-        try{
-            st = (Statement) conn.createStatement();
-            String sql = "SELECT * FROM parking_store";
-            rs = st.executeQuery(sql);
-            while(rs.next()){
-                int id = rs.getInt("id");
-                String regis = rs.getString("regis");
-                String gen = rs.getString("gen");
-                String timeInStr = rs.getString("time_in");
-                String runningTime = "";
-                java.util.Date timeInDate = null;
-                if (timeInStr != null && !timeInStr.trim().isEmpty()) {
-                    try {
-                        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
-                        java.util.Date parsedTime = sdf.parse(timeInStr);
-                        java.util.Calendar cal = java.util.Calendar.getInstance();
-                        java.util.Calendar now = java.util.Calendar.getInstance();
-                        cal.setTime(parsedTime);
-                        // Set the date part to today
-                        cal.set(now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH), now.get(java.util.Calendar.DAY_OF_MONTH));
-                        timeInDate = cal.getTime();
-                        // Always compute running time based on time_in
-                        long diff = System.currentTimeMillis() - timeInDate.getTime();
-                        if (diff < 0) {
-                            // If time_in is in the future (e.g., overnight), add 24h
-                            diff += 24 * 60 * 60 * 1000;
-                        }
-                        // Format running time as 00:00 - hr:mm (and update table to not show seconds)
-                        long totalMinutes = diff / (60 * 1000);
-                        long hrs = totalMinutes / 60;
-                        long mins = totalMinutes % 60;
-                        runningTime = String.format("%02d:%02d", hrs, mins);
-                        runningTimeMap.put(id, timeInDate);
-                    } catch (Exception e) {
-                        runningTime = "";
-                    }
-                }
-                model.addRow(new Object[]{
-                    id,
-                    regis,
-                    gen,
-                    timeInStr,
-                    runningTime
-                });
-                manage_num_row++;
-                // Add available spots to combo box
-                if(rs.getBoolean("vailable")) {
-                    sales_combo.addItem(String.valueOf(id));
-                    hasAvailableSlot = true;
-                }
-            }
-        } catch(SQLException ex){
-            System.out.print(ex);
-        }
-
-        // Only disable the button here, do not show dialog
-        if (!hasAvailableSlot) {
-            sales_btnAdd.setEnabled(false);
-        } else {
-            sales_btnAdd.setEnabled(true);
-        }
-
-        //Header column
-        JTableHeader theader = table_sales.getTableHeader();
-        theader.setBackground(COLOR_PRIMARY_YELLOW);
-        theader.setForeground(COLOR_TEXT_BLACK);
-        theader.setFont(new Font("Inter", Font.PLAIN, 18));
-        theader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-        // Center header text
-        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) theader.getDefaultRenderer();
-        headerRenderer.setHorizontalAlignment(JLabel.CENTER);
-
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-        for (int i = 0; i < table_sales.getColumnCount(); i++) {
-            table_sales.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-
-        table_sales.setRowHeight(30);
-        table_sales.setFont(new Font("Inter", Font.PLAIN, 16));
-        // Apply alternate row renderer after updating model
-        applyAlternateRowRenderer(table_sales);
-    }
-    
-    // Add this method to format running time
-    private String formatRunningTime(long millis) {
-        if (millis < 0) millis = 0;
-        long totalMinutes = millis / (60 * 1000);
-        long hrs = totalMinutes / 60;
-        long mins = totalMinutes % 60;
-        return String.format("%02d:%02d", hrs, mins);
-    }
-
-    // Add this method to update running time every second
-    private void startRunningTimeTimer() {
-        if (runningTimeTimer != null) {
-            runningTimeTimer.stop();
-        }
-        runningTimeTimer = new Timer(1000, new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-                for (int row = 0; row < model.getRowCount(); row++) {
-                    int id = (int) model.getValueAt(row, 0);
-                    java.util.Date timeIn = runningTimeMap.get(id);
-                    if (timeIn != null) {
-                        long diff = System.currentTimeMillis() - timeIn.getTime();
-                        model.setValueAt(formatRunningTime(diff), row, 4); // 4th index is "Running Time"
-                    } else {
-                        model.setValueAt("", row, 4);
-                    }
-                }
-            }
-        });
-        runningTimeTimer.start();
     }
     
     private void initTableHistory(){
@@ -842,14 +846,14 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_sales.add(sales_regis, new org.netbeans.lib.awtextra.AbsoluteConstraints(fieldX, y, fieldWidth, fieldHeight));
         y += spacing;
 
-        // Parking Slot (Combo box for available slots)
-        jLabel6.setFont(new java.awt.Font("Inter", 0, 14));
-        jLabel6.setText("Parking Slot");
-        panel_sales.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(labelX, y, 80, labelHeight));
-        sales_combo.setFont(new java.awt.Font("Inter", 0, 14));
-        sales_combo.setVisible(true); // ensure visible
-        panel_sales.add(sales_combo, new org.netbeans.lib.awtextra.AbsoluteConstraints(fieldX, y, fieldWidth, fieldHeight));
-        y += spacing + 10;
+        // Show available slots label
+        availableSlotsLabel.setFont(new Font("Inter", Font.BOLD, 14));
+        availableSlotsLabel.setForeground(COLOR_SUCCESS_GREEN);
+        availableSlotsLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        availableSlotsLabel.setText("Available Slots: 0");
+        // Add to panel_sales in the Add Car section (just above Add Car button)
+        panel_sales.add(availableSlotsLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(rightPanelX + 20, y, rightPanelWidth - 40, 25));
+        y += 30;
 
         // Add Parked Car Button
         sales_btnAdd.setBackground(new java.awt.Color(115, 12, 22));
@@ -888,17 +892,19 @@ public class Main_dashboard extends javax.swing.JFrame {
         jLabel9.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 18));
         jLabel9.setText("Pay & Exit");
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        panel_sales.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(rightPanelX + 10, payLabelY, rightPanelWidth - 20, payLabelHeight));
+        panel_sales.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(rightPanelX + 10, payLabelY, rightPanelWidth - 20, payLabelHeight+20));
         payLabelY += payFieldSpacing;
 
-        // Parking Slot (output)
-        jLabel11.setFont(new java.awt.Font("Inter", 0, 14));
-        jLabel11.setText("Parking Slot");
-        panel_sales.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(payLabelX, payLabelY, 80, payLabelHeight));
-        sales_id_out.setEditable(false);
-        sales_id_out.setFont(new java.awt.Font("Inter", 0, 14));
-        sales_id_out.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        panel_sales.add(sales_id_out, new org.netbeans.lib.awtextra.AbsoluteConstraints(payFieldX, payLabelY, fieldWidth, payFieldHeight));
+        // --- HIDE Parking Slot (output) in Pay & Exit section ---
+        // jLabel11.setFont(new java.awt.Font("Inter", 0, 14));
+        // jLabel11.setText("Parking Slot");
+        // panel_sales.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(payLabelX, payLabelY, 80, payLabelHeight));
+        // sales_id_out.setEditable(false);
+        // sales_id_out.setFont(new java.awt.Font("Inter", 0, 14));
+        // sales_id_out.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        // panel_sales.add(sales_id_out, new org.netbeans.lib.awtextra.AbsoluteConstraints(payFieldX, payLabelY, fieldWidth, payFieldHeight));
+        // payLabelY += payFieldSpacing;
+        // Instead, just increment payLabelY to keep spacing
         payLabelY += payFieldSpacing;
 
         // Car Brand (output)
@@ -1320,13 +1326,20 @@ public class Main_dashboard extends javax.swing.JFrame {
         PreparedStatement pt = null;
 
         try{
-            String sql = "INSERT INTO parking_store (id, vailable, gen, regis) VALUES ("+ (manage_num_row) +", true, '', '')";
+            // Get the current maximum id from parking_store
+            int nextId = 1;
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT MAX(id) FROM parking_store");
+            if (rs.next()) {
+                nextId = rs.getInt(1) + 1;
+            }
+            String sql = "INSERT INTO parking_store (id, vailable, gen, regis) VALUES ("+ nextId +", true, '', '')";
             pt = conn.prepareStatement(sql);
             pt.execute();
             initTableManage();
             initTableSales();
-            // Show dialog for add action
-            JOptionPane.showMessageDialog(this, "Parking slot " + (manage_num_row - 1) + " has been added.", "Add Parking Slot", JOptionPane.INFORMATION_MESSAGE);
+            // Show dialog for add action with correct slot number
+            JOptionPane.showMessageDialog(this, "Parking slot " + nextId + " has been added.", "Add Parking Slot", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -1334,7 +1347,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
     private void sales_btnAddMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btnAddMouseClicked
     // If button is disabled, show dialog and return
-    if (!sales_btnAdd.isEnabled() || sales_combo.getItemCount() == 0) {
+    if (!sales_btnAdd.isEnabled()) {
         JOptionPane.showMessageDialog(this, "No parking slots available. Please add more slots or wait for a slot to be vacated.", "No Parking Slot Available", JOptionPane.WARNING_MESSAGE);
         return;
     }
@@ -1346,12 +1359,21 @@ public class Main_dashboard extends javax.swing.JFrame {
         return;
     }
 
-    // Require user to select a parking slot from combo box
-    if (sales_combo.getSelectedItem() == null) {
-        JOptionPane.showMessageDialog(this, "Please select a parking slot.", "No Parking Slot Selected", JOptionPane.WARNING_MESSAGE);
+    // Find the lowest-numbered available slot
+    int selectSlot = -1;
+    try {
+        Statement st = conn.createStatement();
+        ResultSet rs = st.executeQuery("SELECT id FROM parking_store WHERE vailable=true ORDER BY id ASC LIMIT 1");
+        if (rs.next()) {
+            selectSlot = rs.getInt("id");
+        }
+    } catch (SQLException ex) {
+        System.out.print(ex);
+    }
+    if (selectSlot == -1) {
+        JOptionPane.showMessageDialog(this, "No parking slots available. Please add more slots or wait for a slot to be vacated.", "No Parking Slot Available", JOptionPane.WARNING_MESSAGE);
         return;
     }
-    int selectCombo = Integer.parseInt(sales_combo.getSelectedItem().toString());
 
     // Generate unique 8-digit reference number
     String refNumber = "";
@@ -1375,22 +1397,31 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Get current time for Time In
     String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
 
-    // Add Time In to confirmation dialog
+    // Add Time In and assigned slot to confirmation dialog
     String confirmMsg = "Please confirm the following details:\n"
             + "Car Brand: " + carBrand + "\n"
-            + "License Plate: " + licensePlate + "\n"
-            + "Parking Slot: " + selectCombo + "\n"
+            + "License Plate: " + licensePlate + "\n\n"
             + "Is this information correct?";
     int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
         PreparedStatement pt = null;
         try{
-            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "' WHERE id=" + selectCombo;
+            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "' WHERE id=" + selectSlot;
             pt = conn.prepareStatement(sql);
             pt.execute();
             initTableManage();
+            // Instead of initTableSales(), call the following to ensure only valid rows are shown:
             initTableSales();
-            JOptionPane.showMessageDialog(this, "Car parked successfully at slot " + selectCombo + ".\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+            // Remove any rows that have empty car details (safety)
+            DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+            for (int i = model.getRowCount() - 1; i >= 0; i--) {
+                String regisVal = (String) model.getValueAt(i, 1);
+                String genVal = (String) model.getValueAt(i, 2);
+                if (regisVal == null || regisVal.trim().isEmpty() || genVal == null || genVal.trim().isEmpty()) {
+                    model.removeRow(i);
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Car parked successfully." + ".\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -1524,17 +1555,13 @@ public class Main_dashboard extends javax.swing.JFrame {
             pt.execute();
             // Remove running time entry for this id
             runningTimeMap.remove(id);
-            // Also clear the running time cell in the table immediately
+
+            // --- Remove all rows from the dashboard table (table_sales) ---
             DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-            for (int row = 0; row < model.getRowCount(); row++) {
-                Object spotId = model.getValueAt(row, 0);
-                if (spotId instanceof Integer && ((Integer) spotId) == id) {
-                    model.setValueAt("", row, 4); // Clear "Running Time" column
-                    break;
-                }
-            }
+            model.setRowCount(0);
+
             initTableManage();
-            initTableSales();
+            // Do NOT call initTableSales() here, as it would reload all rows
             // Optionally clear the output fields
             sales_id_out.setText("");
             sales_gen_out.setText("");
@@ -1554,6 +1581,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
+   
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -1667,7 +1695,7 @@ public class Main_dashboard extends javax.swing.JFrame {
                 c.setForeground(COLOR_TEXT_BLACK);
                 // Center all cell text
                 setHorizontalAlignment(JLabel.CENTER);
-                return c;
+            return c;
             }
         };
         for (int i = 0; i < table.getColumnCount(); i++) {
@@ -1677,5 +1705,37 @@ public class Main_dashboard extends javax.swing.JFrame {
         JTableHeader header = table.getTableHeader();
         DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) header.getDefaultRenderer();
         headerRenderer.setHorizontalAlignment(JLabel.CENTER);
+    }
+
+    // Add this method if missing
+    private void startRunningTimeTimer() {
+        runningTimeTimer = new Timer(60000, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Update running time for each occupied slot
+                for (Map.Entry<Integer, java.util.Date> entry : runningTimeMap.entrySet()) {
+                    int id = entry.getKey();
+                    java.util.Date timeIn = entry.getValue();
+                    long diff = System.currentTimeMillis() - timeIn.getTime();
+                    if (diff < 0) {
+                        diff += 24 * 60 * 60 * 1000;
+                    }
+                    long totalMinutes = diff / (60 * 1000);
+                    long hrs = totalMinutes / 60;
+                    long mins = totalMinutes % 60;
+                    String runningTime = String.format("%02d:%02d", hrs, mins);
+
+                    // Update the running time in the table
+                    DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+                    for (int row = 0; row < model.getRowCount(); row++) {
+                        Object spotId = model.getValueAt(row, 0);
+                        if (spotId instanceof Integer && ((Integer) spotId) == id) {
+                            model.setValueAt(runningTime, row, 4); // Update "Running Time" column
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        runningTimeTimer.start();
     }
 }
