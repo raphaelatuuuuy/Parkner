@@ -18,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,6 +46,16 @@ public class Main_dashboard extends javax.swing.JFrame {
     
     Connection conn = new dbConnect().dbcon();
     
+    // Map to store time_in (as Date) for each parking spot id
+    private Map<Integer, java.util.Date> runningTimeMap = new HashMap<>();
+    private Timer runningTimeTimer;
+
+    // Add a label for total revenue
+    private javax.swing.JLabel totalRevenueLabel = new javax.swing.JLabel();
+
+    // Add a panel to hold the total revenue label
+    private javax.swing.JPanel revenuePanel = new javax.swing.JPanel();
+
     public Main_dashboard() {
         initComponents();
         initTableSales();
@@ -71,6 +83,35 @@ public class Main_dashboard extends javax.swing.JFrame {
                 }
             }
         });
+        startRunningTimeTimer();
+
+        // --- TOTAL REVENUE LABEL: Place at the bottom of Service History panel, always visible ---
+        totalRevenueLabel.setText("Total Revenue: 0 pesos");
+        totalRevenueLabel.setFont(new Font("Sarabun", Font.BOLD, 18));
+        totalRevenueLabel.setForeground(new Color(115, 12, 22));
+        totalRevenueLabel.setOpaque(true);
+        totalRevenueLabel.setBackground(new Color(254, 240, 241));
+        totalRevenueLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(115, 12, 22), 2, true),
+            BorderFactory.createEmptyBorder(8, 16, 8, 16)
+        ));
+
+        revenuePanel.setLayout(new java.awt.BorderLayout());
+        revenuePanel.setBackground(new Color(254, 240, 241));
+        revenuePanel.add(totalRevenueLabel, java.awt.BorderLayout.CENTER);
+        revenuePanel.setBounds(0, 590, 690, 40); // width matches panel_history, y=bottom
+
+        // Remove any previous instance and add revenuePanel at the bottom
+        panel_history.remove(totalRevenueLabel);
+        panel_history.add(revenuePanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 590, 690, 40));
+        panel_history.setComponentZOrder(revenuePanel, 0);
+
+        // Adjust the scroll pane height so it doesn't overlap the revenue panel
+        jScrollPane3.setBounds(0, 0, 690, 590); // 590 = 630(panel height) - 40(label height)
+        panel_history.setLayout(null); // Use absolute layout for precise placement
+        panel_history.add(jScrollPane3);
+
+        updateTotalRevenue();
     }
     
     public void initTableManage(){
@@ -114,97 +155,162 @@ public class Main_dashboard extends javax.swing.JFrame {
     }
     
     public void initTableSales(){
-        /*int delay = 1000; //milliseconds
-        ActionListener taskPerformer = new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                String date = new java.text.SimpleDateFormat("HH:mm:ss").format(new java.util.Date(System.currentTimeMillis()));
-                test_time.setText(date);
-            }
-        };
-        new Timer(delay, taskPerformer).start(); */
-        
         DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+        // Show the combo box for parking spot selection again
+        sales_combo.setVisible(true);
         sales_combo.removeAllItems();
         model.setRowCount(0);
         manage_num_row = 1;
-        
+        // Do NOT clear runningTimeMap here to preserve running times for existing cars
+
         Statement st;
         ResultSet rs;
-        
-        String pList = "";
+
         try{
             st = (Statement) conn.createStatement();
             String sql = "SELECT * FROM parking_store";
             rs = st.executeQuery(sql);
-            int i = 0;
             while(rs.next()){
-                // Only add license plate, car brand, and time_in
+                int id = rs.getInt("id");
+                String regis = rs.getString("regis");
+                String gen = rs.getString("gen");
+                String timeInStr = rs.getString("time_in");
+                String runningTime = "";
+                java.util.Date timeInDate = null;
+                if (timeInStr != null && !timeInStr.trim().isEmpty()) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
+                        java.util.Date parsedTime = sdf.parse(timeInStr);
+                        java.util.Calendar cal = java.util.Calendar.getInstance();
+                        java.util.Calendar now = java.util.Calendar.getInstance();
+                        cal.setTime(parsedTime);
+                        // Set the date part to today
+                        cal.set(now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH), now.get(java.util.Calendar.DAY_OF_MONTH));
+                        timeInDate = cal.getTime();
+                        // Always compute running time based on time_in
+                        long diff = System.currentTimeMillis() - timeInDate.getTime();
+                        if (diff < 0) {
+                            // If time_in is in the future (e.g., overnight), add 24h
+                            diff += 24 * 60 * 60 * 1000;
+                        }
+                        // Format running time as 00:00 - hr:mm (and update table to not show seconds)
+                        long totalMinutes = diff / (60 * 1000);
+                        long hrs = totalMinutes / 60;
+                        long mins = totalMinutes % 60;
+                        runningTime = String.format("%02d:%02d", hrs, mins);
+                        runningTimeMap.put(id, timeInDate);
+                    } catch (Exception e) {
+                        runningTime = "";
+                    }
+                }
                 model.addRow(new Object[]{
-                    rs.getString("gen"),
-                    rs.getString("regis"),
-                    rs.getString("time_in")
+                    id,
+                    regis,
+                    gen,
+                    timeInStr,
+                    runningTime
                 });
                 manage_num_row++;
-                if(rs.getBoolean("vailable") == true) sales_combo.addItem(rs.getInt("id") + "");
+                // Add available spots to combo box
+                if(rs.getBoolean("vailable")) sales_combo.addItem(String.valueOf(id));
             }
         } catch(SQLException ex){
             System.out.print(ex);
         }
-        
+
         //Header column
         JTableHeader theader = table_sales.getTableHeader();
         theader.setBackground(new Color(115,12,22));
         theader.setForeground(Color.white);
         theader.setFont(new Font("Sarabun", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createBevelBorder(EtchedBorder.RAISED, new Color(115,12,22), new Color(115,12,22)));
-        
-        
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-        table_sales.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        table_sales.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        table_sales.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+        for (int i = 0; i < table_sales.getColumnCount(); i++) {
+            table_sales.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
 
         table_sales.setRowHeight(30);
         table_sales.setFont(new Font("Sarabun", Font.PLAIN, 16));
     }
     
+    // Add this method to format running time
+    private String formatRunningTime(long millis) {
+        if (millis < 0) millis = 0;
+        long totalMinutes = millis / (60 * 1000);
+        long hrs = totalMinutes / 60;
+        long mins = totalMinutes % 60;
+        return String.format("%02d:%02d", hrs, mins);
+    }
+
+    // Add this method to update running time every second
+    private void startRunningTimeTimer() {
+        if (runningTimeTimer != null) {
+            runningTimeTimer.stop();
+        }
+        runningTimeTimer = new Timer(1000, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
+                for (int row = 0; row < model.getRowCount(); row++) {
+                    int id = (int) model.getValueAt(row, 0);
+                    java.util.Date timeIn = runningTimeMap.get(id);
+                    if (timeIn != null) {
+                        long diff = System.currentTimeMillis() - timeIn.getTime();
+                        model.setValueAt(formatRunningTime(diff), row, 4); // 4th index is "Running Time"
+                    } else {
+                        model.setValueAt("", row, 4);
+                    }
+                }
+            }
+        });
+        runningTimeTimer.start();
+    }
+    
     private void initTableHistory(){
         DefaultTableModel model = (DefaultTableModel) table_history.getModel();
         model.setRowCount(0);
-        
+
         Statement st;
         ResultSet rs;
-        
+
         try{
             st = (Statement) conn.createStatement();
             String sql = "SELECT * FROM report";
             rs = st.executeQuery(sql);
-            
+
             while(rs.next()){
-                model.addRow(new Object[]{rs.getInt("id"), rs.getString("gen"), rs.getString("regis"), rs.getInt("totalPrice")});
+                // Add time_in and time_out to the row
+                model.addRow(new Object[]{
+                    rs.getInt("id"),
+                    rs.getString("gen"),
+                    rs.getString("regis"),
+                    rs.getInt("totalPrice"),
+                    rs.getString("time_in"),
+                    rs.getString("time_out")
+                });
             }
         } catch(SQLException ex){
             System.out.print(ex);
         }
-        
+
         //Header column
         JTableHeader theader = table_history.getTableHeader();
         theader.setBackground(new Color(115,12,22));
         theader.setForeground(Color.white);
         theader.setFont(new Font("Sarabun", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createBevelBorder(EtchedBorder.RAISED, new Color(115,12,22), new Color(115,12,22)));
-        
-        
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-        table_history.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        table_history.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        table_history.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        table_history.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
-        
+        for (int i = 0; i < table_history.getColumnCount(); i++) {
+            table_history.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         table_history.setRowHeight(30);
         table_history.setFont(new Font("Sarabun", Font.PLAIN, 16));
+        
+        updateTotalRevenue(); // Update revenue after loading history
     }
     
     public void centerFrame() {
@@ -368,7 +474,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             },
             new String [] {
-                "License Plate", "Car Brand", "Time In"
+                "Parking Spot", "License Plate", "Car Brand", "Time In", "Running Time"
             }
         ));
         table_sales.setAlignmentX(0.0F);
@@ -513,7 +619,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Parking Spot", "Car Brand", "License Plate", "Amount Paid"
+                "Parking Spot", "Car Brand", "License Plate", "Amount Paid", "Time In", "Time Out"
             }
         ));
         table_history.setAlignmentX(0.0F);
@@ -673,6 +779,9 @@ public class Main_dashboard extends javax.swing.JFrame {
         panel_sales.setVisible(false);
         panel_manage.setVisible(false);
         panel_history.setVisible(true);
+        // Always refresh the service history table when Service History is clicked
+        initTableHistory();
+        updateTotalRevenue(); // Ensure revenue is updated when switching to history
     }//GEN-LAST:event_jButton1MouseClicked
 
     private void btn_updateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_updateMouseClicked
@@ -867,53 +976,54 @@ public class Main_dashboard extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, "Car Brand and License Plate cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
         return;
     }
-    if(!carBrand.equals("") && !licensePlate.equals("")){
-        int selectCombo = Integer.parseInt(sales_combo.getSelectedItem().toString());
-        // Generate unique 8-digit reference number
-        String refNumber = "";
-        Random rand = new Random();
-        boolean unique = false;
-        while (!unique) {
-            int num = 10000000 + rand.nextInt(90000000); // 8-digit
-            refNumber = String.valueOf(num);
-            try {
-                Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM parking_store WHERE reference_number='" + refNumber + "'");
-                if (rs.next() && rs.getInt(1) == 0) {
-                    unique = true;
-                }
-            } catch (SQLException ex) {
-                System.out.print(ex);
-                // fallback: break to avoid infinite loop if error
-                break;
+
+    // Require user to select a parking spot from combo box
+    if (sales_combo.getSelectedItem() == null) {
+        JOptionPane.showMessageDialog(this, "Please select a parking spot.", "No Parking Spot Selected", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    int selectCombo = Integer.parseInt(sales_combo.getSelectedItem().toString());
+
+    // Generate unique 8-digit reference number
+    String refNumber = "";
+    Random rand = new Random();
+    boolean unique = false;
+    while (!unique) {
+        int num = 10000000 + rand.nextInt(90000000); // 8-digit
+        refNumber = String.valueOf(num);
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM parking_store WHERE reference_id='" + refNumber + "'");
+            if (rs.next() && rs.getInt(1) == 0) {
+                unique = true;
             }
+        } catch (SQLException ex) {
+            System.out.print(ex);
+            break;
         }
+    }
 
-        // Get current time for Time In
-        String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+    // Get current time for Time In
+    String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
 
-        // Add Time In to confirmation dialog
-        String confirmMsg = "Please confirm the following details:\n"
-                + "Car Brand: " + carBrand + "\n"
-                + "License Plate: " + licensePlate + "\n"
-                + "Parking Spot: " + selectCombo + "\n"
-                + "Time In: " + timeIn + "\n\n"
-                + "Is this information correct?";
-        int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            PreparedStatement pt = null;
-            try{
-                // Add time_in to the update statement
-                String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "' WHERE id=" + selectCombo;
-                pt = conn.prepareStatement(sql);
-                pt.execute();
-                initTableManage();
-                initTableSales();
-                // Show reference number and time in the success message
-                JOptionPane.showMessageDialog(this, "Car parked successfully at spot " + selectCombo + ".\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
-            } catch(SQLException ex){
-                System.out.print(ex);
-            }
+    // Add Time In to confirmation dialog
+    String confirmMsg = "Please confirm the following details:\n"
+            + "Car Brand: " + carBrand + "\n"
+            + "License Plate: " + licensePlate + "\n"
+            + "Parking Spot: " + selectCombo + "\n"
+            + "Is this information correct?";
+    int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+        PreparedStatement pt = null;
+        try{
+            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "' WHERE id=" + selectCombo;
+            pt = conn.prepareStatement(sql);
+            pt.execute();
+            initTableManage();
+            initTableSales();
+            JOptionPane.showMessageDialog(this, "Car parked successfully at spot " + selectCombo + ".\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch(SQLException ex){
+            System.out.print(ex);
         }
     }
 }//GEN-LAST:event_sales_btnAddMouseClicked
@@ -921,28 +1031,36 @@ public class Main_dashboard extends javax.swing.JFrame {
     int id;
     String gen, regis;
     private void table_salesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_salesMouseClicked
-        if(((String) table_sales.getValueAt(table_sales.getSelectedRow(), 1)).equals("Unavailable")){
-            id = (int) table_sales.getValueAt(table_sales.getSelectedRow(), 0);
-            gen = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 2);
-            regis = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 3);
-            // Optionally, you can fetch/display time-in if needed:
-            // String timeIn = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 4);
+        // Adjusted for new column order (with Running Time column)
+        id = (int) table_sales.getValueAt(table_sales.getSelectedRow(), 0);
+        regis = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 1);
+        gen = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 2);
+        // String timeIn = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 3);
+        // String runningTime = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 4);
 
-            sales_id_out.setText(id + "");
-            sales_gen_out.setText(gen);
-            sales_regis_out.setText(regis);
+        // Check if spot is unavailable by querying DB (since table doesn't show status now)
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT vailable FROM parking_store WHERE id=" + id);
+            if (rs.next() && !rs.getBoolean("vailable")) {
+                sales_id_out.setText(id + "");
+                sales_gen_out.setText(gen);
+                sales_regis_out.setText(regis);
 
-            // Enable return car fields
-            setReturnCarFieldsEnabled(true);
-        }else{
-            sales_id_out.setText("");
-            sales_gen_out.setText("");
-            sales_regis_out.setText("");
+                // Enable return car fields
+                setReturnCarFieldsEnabled(true);
+            } else {
+                sales_id_out.setText("");
+                sales_gen_out.setText("");
+                sales_regis_out.setText("");
 
-            // Disable return car fields if not occupied
-            setReturnCarFieldsEnabled(false);
-            // Show new dialog when user clicks on an available spot
-            JOptionPane.showMessageDialog(this, "Please add a car first. To return", "No Car Selected", JOptionPane.WARNING_MESSAGE);
+                // Disable return car fields if not occupied
+                setReturnCarFieldsEnabled(false);
+                // Show new dialog when user clicks on an available spot
+                JOptionPane.showMessageDialog(this, "Please add a car first. To return", "No Car Selected", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            System.out.print(ex);
         }
     }//GEN-LAST:event_table_salesMouseClicked
 
@@ -985,6 +1103,23 @@ public class Main_dashboard extends javax.swing.JFrame {
         int totalPrice = hours * 50;
         receip receiptWindow = new receip(id, gen, regis, totalPrice, this);
         receiptWindow.setVisible(true);
+
+        // --- Clear time_in, running time, and reference_id after payment ---
+        try {
+            // This will clear time_in, running time (by removing time_in), and reference_id
+            String sql = "UPDATE parking_store SET vailable=true, gen='', regis='', time_in='', reference_id='' WHERE id=" + id;
+            PreparedStatement pt = conn.prepareStatement(sql);
+            pt.execute();
+            initTableManage();
+            initTableSales();
+            // Optionally clear the output fields
+            sales_id_out.setText("");
+            sales_gen_out.setText("");
+            sales_regis_out.setText("");
+            setReturnCarFieldsEnabled(false);
+        } catch (SQLException ex) {
+            System.out.print(ex);
+        }
     }//GEN-LAST:event_sales_btn_payMouseClicked
 
     private void table_historyMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_historyMouseClicked
@@ -1072,4 +1207,24 @@ public class Main_dashboard extends javax.swing.JFrame {
     private javax.swing.JTable table_manage;
     private javax.swing.JTable table_sales;
     // End of variables declaration//GEN-END:variables
+
+    // Method to update total revenue label
+    private void updateTotalRevenue() {
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT SUM(totalPrice) FROM report");
+            int total = 0;
+            if (rs.next()) {
+                total = rs.getInt(1);
+            }
+            totalRevenueLabel.setText("Total Revenue: " + total + " pesos");
+        } catch (SQLException ex) {
+            totalRevenueLabel.setText("Total Revenue: Error");
+        }
+    }
+    
+    // Add a public method so receip can trigger revenue update after payment
+    public void refreshTotalRevenue() {
+        updateTotalRevenue();
+    }
 }

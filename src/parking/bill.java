@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -20,6 +22,15 @@ public class bill extends javax.swing.JFrame {
 
     Connection conn = new dbConnect().dbcon();
 
+    // Add dynamic labels as class fields
+    private javax.swing.JLabel refLabel;
+    private javax.swing.JLabel timeInLabel;
+    private javax.swing.JLabel timeInValue;
+    private javax.swing.JLabel timeOutLabel;
+    private javax.swing.JLabel timeOutValue;
+    private javax.swing.JLabel totalTimeLabel;
+    private javax.swing.JLabel totalTimeValue;
+
     // Add a constructor that accepts referenceId
     public bill(String referenceId) {
         initComponents();
@@ -30,7 +41,7 @@ public class bill extends javax.swing.JFrame {
         try {
             // Get the latest report for this referenceId
             st = conn.createStatement();
-            String sql = "SELECT id, gen, regis, totalPrice, `change`, reference_id FROM report WHERE reference_id " +
+            String sql = "SELECT id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out FROM report WHERE reference_id " +
                          (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
                          " ORDER BY id DESC LIMIT 1";
             rs = st.executeQuery(sql);
@@ -44,61 +55,78 @@ public class bill extends javax.swing.JFrame {
                 double totalValue = priceValue;
                 double changeValue = rs.getDouble("change");
                 String refNum = rs.getString("reference_id");
+                String timeIn = rs.getString("time_in");
+                String timeOut = rs.getString("time_out");
 
                 name.setText("Parking Spot: " + spotId);
                 carBrandLabel.setText("Car Brand: " + carBrand);
                 licenseLabel.setText("License Plate: " + licensePlate);
 
-                // Remove any previous dynamic reference number label
-                for (java.awt.Component comp : jPanel1.getComponents()) {
-                    if (comp instanceof javax.swing.JLabel) {
-                        String txt = ((javax.swing.JLabel) comp).getText();
-                        if (txt != null && txt.startsWith("Reference Number:")) {
-                            jPanel1.remove(comp);
-                            break;
-                        }
+                // Set dynamic label texts
+                refLabel.setText("Reference Number: " + (refNum == null ? "N/A" : refNum));
+                timeInLabel.setText("Time In:");
+                timeInValue.setText(timeIn == null ? "N/A" : timeIn);
+                timeOutLabel.setText("Time Out:");
+                timeOutValue.setText(timeOut == null ? "N/A" : timeOut);
+
+                // Compute total time of parking
+                String totalTimeStr = "N/A";
+                if (timeIn != null && timeOut != null) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
+                        java.util.Date tIn = sdf.parse(timeIn);
+                        java.util.Date tOut = sdf.parse(timeOut);
+                        long diffMs = tOut.getTime() - tIn.getTime();
+                        if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // handle overnight
+                        long totalSeconds = diffMs / 1000;
+                        long hrs = totalSeconds / 3600;
+                        long mins = (totalSeconds % 3600) / 60;
+                        long secs = totalSeconds % 60;
+                        StringBuilder sb = new StringBuilder();
+                        if (hrs > 0) sb.append(hrs).append("hr ");
+                        if (mins > 0 || hrs > 0) sb.append(mins).append("min ");
+                        sb.append(secs).append("s");
+                        totalTimeStr = sb.toString().trim();
+                    } catch (ParseException e) {
+                        totalTimeStr = "N/A";
                     }
                 }
-                // Reference Number
-                javax.swing.JLabel refLabel = new javax.swing.JLabel();
-                refLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.BOLD, 13));
-                refLabel.setText("Reference Number: " + (refNum == null ? "N/A" : refNum));
-                jPanel1.add(refLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 320, 20));
-
-                // Move divider further down (after ref num)
-                jPanel2.setBounds(30, 175, 340, 1);
+                totalTimeLabel.setText("Total Time:");
+                totalTimeValue.setText(totalTimeStr);
 
                 // Set all values, align right
-                price.setText(String.format("P %.2f", priceValue));
+                price.setText(String.format("P %8.2f", priceValue));
                 price.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                vat.setText(String.format("P %.2f", vatValue));
+                vat.setText(String.format("P %8.2f", vatValue));
                 vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                total.setText(String.format("P %.2f", totalValue));
+                total.setText(String.format("P %8.2f", totalValue));
                 total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
 
                 // Amount Paid (reuse changeLabel/changeValueLabel)
                 changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeLabel.setText("Paid:");
                 changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                changeLabel.setBounds(40, 255, 120, 20);
+                changeLabel.setBounds(40, 260 + 20, 120, 20);
 
                 changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                changeValueLabel.setText(String.format("P %.2f", priceValue + changeValue));
-                changeValueLabel.setBounds(250, 255, 120, 20);
+                changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
+                changeValueLabel.setBounds(250, 260 + 20, 120, 20);
 
                 // Add a static label for "Change" below Amount Paid
                 javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
                 changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeLabel2.setText("Change:");
                 changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 280, 120, 20));
+                changeLabel2.setName("dyn_changelabel2");
+                jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260 + 45, 120, 20));
 
                 javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
                 changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                changeValueLabel2.setText(String.format("P %.2f", changeValue));
-                jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 280, 120, 20));
+                changeValueLabel2.setText(String.format("P %8.2f", changeValue));
+                changeValueLabel2.setName("dyn_changevalue2");
+                jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
 
                 // Date
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
@@ -114,6 +142,13 @@ public class bill extends javax.swing.JFrame {
                 total.setText("");
                 changeValueLabel.setText("");
                 date.setText("");
+                refLabel.setText("Reference Number: N/A");
+                timeInLabel.setText("Time In:");
+                timeInValue.setText("N/A");
+                timeOutLabel.setText("Time Out:");
+                timeOutValue.setText("N/A");
+                totalTimeLabel.setText("Total Time:");
+                totalTimeValue.setText("N/A");
             }
         } catch(SQLException ex){
             System.out.print(ex);
@@ -150,6 +185,32 @@ public class bill extends javax.swing.JFrame {
         changeValueLabel = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         date = new javax.swing.JLabel();
+
+        // --- Add dynamic labels (split label and value for alignment) ---
+        refLabel = new javax.swing.JLabel();
+        refLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.BOLD, 13));
+        refLabel.setText("Reference Number:");
+        timeInLabel = new javax.swing.JLabel();
+        timeInLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        timeInLabel.setText("Time In:");
+        timeInValue = new javax.swing.JLabel();
+        timeInValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        timeInValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+
+        timeOutLabel = new javax.swing.JLabel();
+        timeOutLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        timeOutLabel.setText("Time Out:");
+        timeOutValue = new javax.swing.JLabel();
+        timeOutValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        timeOutValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+
+        totalTimeLabel = new javax.swing.JLabel();
+        totalTimeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        totalTimeLabel.setText("Total Time:");
+        totalTimeValue = new javax.swing.JLabel();
+        totalTimeValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+        totalTimeValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        // --- End dynamic labels ---
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -192,41 +253,55 @@ public class bill extends javax.swing.JFrame {
         licenseLabel.setText("License Plate:");
         jPanel1.add(licenseLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 135, 320, 20));
 
-        // VAT
+        // Reference Number (single label, left-aligned)
+        jPanel1.add(refLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 320, 20));
+
+        // Time In (label left, value right)
+        jPanel1.add(timeInLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 180, 100, 20));
+        jPanel1.add(timeInValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 180, 120, 20));
+
+        // Time Out (label left, value right)
+        jPanel1.add(timeOutLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 210, 100, 20));
+        jPanel1.add(timeOutValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 210, 120, 20));
+
+        // Total Time (label left, value right)
+        jPanel1.add(totalTimeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 240, 100, 20));
+        jPanel1.add(totalTimeValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 240, 120, 20));
+
+        // VAT (label left, value right)
         jLabel3.setFont(billLabelFont);
         jLabel3.setText("VAT 7%:");
-        jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 190, 80, 20));
-
+        jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 270, 100, 20));
         vat.setFont(billLabelFont);
         vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         vat.setText("P 0.00");
-        jPanel1.add(vat, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 190, 120, 20));
+        jPanel1.add(vat, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 270, 120, 20));
 
-        // Total
+        // Total (move down)
         jLabel4.setFont(billBoldFont);
         jLabel4.setText("Total:");
-        jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 215, 80, 20));
+        jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 285, 80, 20));
 
         total.setFont(billBoldFont);
         total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         total.setText("P 0.00");
-        jPanel1.add(total, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 215, 120, 20));
+        jPanel1.add(total, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 285, 120, 20));
 
-        // Change
+        // Change (move down)
         changeLabel.setFont(billLabelFont);
         changeLabel.setText("Change:");
-        jPanel1.add(changeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260, 80, 20));
+        jPanel1.add(changeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 340, 80, 20));
 
         changeValueLabel.setFont(billLabelFont);
         changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         changeValueLabel.setText("P 0.00");
-        jPanel1.add(changeValueLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260, 120, 20));
+        jPanel1.add(changeValueLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 340, 120, 20));
 
-        // Date
+        // Date (move down)
         date.setFont(billSubHeaderFont);
         date.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         date.setText("Date:");
-        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 300, 400, 20));
+        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 370, 400, 20));
 
         // Receipt border
         jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180), 2));
@@ -239,7 +314,7 @@ public class bill extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 340, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
         );
 
         pack();

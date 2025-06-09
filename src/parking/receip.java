@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 
 /**
  *
@@ -204,26 +205,35 @@ public class receip extends javax.swing.JFrame {
             Statement st;
             ResultSet rs;
             try {
-                // Get the reference_id from parking_store for this parkingId
+                // Get the reference_id and time_in from parking_store for this parkingId
                 String referenceId = null;
-                String refSql = "SELECT reference_id FROM parking_store WHERE id=" + parkingId;
+                String timeIn = null;
+                String refSql = "SELECT reference_id, time_in FROM parking_store WHERE id=" + parkingId;
                 st = conn.createStatement();
                 rs = st.executeQuery(refSql);
                 if (rs.next()) {
                     referenceId = rs.getString("reference_id");
+                    timeIn = rs.getString("time_in");
                 }
                 lastReferenceId = referenceId; // Store for use in bill
+
+                // Get current time as time_out
+                String timeOut = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
 
                 // Update totalPrice table
                 String sql = "UPDATE totalPrice SET id=" + parkingId + ", price=" + totalPrice;
                 st.executeUpdate(sql);
 
-                // Insert into report, now including change value and reference_id
-                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id) VALUES (" + parkingId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " + (referenceId == null ? "NULL" : ("'" + referenceId + "'")) + ")";
+                // Insert into report, now including change value, reference_id, time_in, and time_out
+                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out) VALUES (" +
+                        parkingId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
+                        (referenceId == null ? "NULL" : ("'" + referenceId + "'")) + ", " +
+                        (timeIn == null ? "NULL" : ("'" + timeIn + "'")) + ", " +
+                        (timeOut == null ? "NULL" : ("'" + timeOut + "'")) + ")";
                 st.executeUpdate(sql);
 
-                // Update parking_store: clear gen, regis, and reference_id
-                sql = "UPDATE parking_store SET vailable=true, gen='', regis='', reference_id=NULL WHERE id=" + parkingId;
+                // Update parking_store: clear gen, regis, reference_id, and time_in
+                sql = "UPDATE parking_store SET vailable=true, gen='', regis='', reference_id=NULL, time_in='' WHERE id=" + parkingId;
                 st.executeUpdate(sql);
 
                 // Clear fields in parent dashboard if available
@@ -235,6 +245,7 @@ public class receip extends javax.swing.JFrame {
                     dash.sales_hours.setText("");
                     dash.initTableManage();
                     dash.initTableSales();
+                    dash.refreshTotalRevenue(); // <-- Update total revenue after payment
                 }
             } catch (SQLException ex) {
                 System.out.print(ex);
