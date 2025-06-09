@@ -1,7 +1,7 @@
 # <div align="center">Parkner Parking Management System</div>
 
 <div align="center">
-  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220"/>
+  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="500" height="500"/>
 </div>
 
 ## About
