@@ -1,60 +1,79 @@
-# Parkner Parking Management System
+# <div align="center">Parkner Parking Management System</div>
 
-![Parkner Logo](src/asset/icons/parkner-logo.png)
+<div align="center">
+  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220"/>
+</div>
 
 ## About
 
-**Parkner** is a Java-based parking management system designed to streamline the process of managing parking slots, vehicle entries, payments, and service history for parking lots. Built with a modern UI using Java Swing, it provides an intuitive dashboard for parking attendants to handle daily parking operations efficiently.
+**Parkner** is a digital parking management system designed to assist parking attendants in efficiently managing vehicle entries, exits, and parking operations. Traditional manual methods often lead to inefficiencies such as miscalculated tickets, lost records, and human error—resulting in customer dissatisfaction and operational challenges. Parkner addresses these issues by providing a user-friendly application that enables real-time slot monitoring, digital record-keeping, and automated fee computation. The system aims to enhance accuracy, security, and efficiency in parking operations, reducing manual workload and minimizing errors for both staff and customers.
 
 ## Purpose
 
-This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under Prof. Renz Angelo De Vera Cadaoas.  
-Additional purposes and goals include:
+This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under Prof. Renz Angelo De Vera Cadaoas.
 
-- To provide hands-on experience in designing and implementing a real-world object-oriented application.
-- To demonstrate the application of Java OOP concepts, GUI development, and database integration.
-- To offer a practical solution for parking lot management, improving efficiency and reducing manual errors.
-- To serve as a learning platform for teamwork, version control, and software engineering best practices.
-- To create a user-friendly system that can be easily adapted for academic or small business use.
+**Additional purposes and goals:**
+
+- Provide hands-on experience in designing and implementing a real-world object-oriented application.
+- Demonstrate Java OOP concepts, GUI development, and database integration.
+- Offer a practical solution for parking lot management, improving efficiency and reducing manual errors.
+- Serve as a learning platform for teamwork, version control, and software engineering best practices.
+- Create a user-friendly system that can be easily adapted for academic or small business use.
 
 ## Features
 
-- **CRUD for Parking Slots:**
+- **Real-Time Slot Monitoring:**  
+  View the total number of parking spaces and monitor their availability as cars come and go.
 
-  - **Create:** Add new parking slots to the system.
-  - **Read:** View all parking slots and their statuses (Available/Unavailable).
-  - **Update:** Change the status of parking slots (e.g., mark as available/unavailable).
-  - **Delete:** Remove parking slots (only if not occupied).
+- **Vehicle Entry and Exit Logging:**  
+  Digitally log vehicle details such as parking slot, car brand, plate number, time-in, and running time.
 
-- **Vehicle Management:**
+- **Digital Record-Keeping:**  
+  All parking transactions and customer information are securely stored in a database for easy retrieval and improved data management.
 
-  - Park a car by entering car brand and license plate.
-  - Assigns the lowest-numbered available slot automatically.
-  - Tracks time-in for each parked vehicle.
+- **Automated Fee Calculation:**  
+  The system automatically calculates parking fees based on recorded entry and exit times, minimizing miscalculations.
 
-- **Payment & Checkout:**
+- **Receipt Generation:**  
+  Customers receive digital receipts before exiting, ensuring reliable records and transparency.
 
-  - Calculates parking fee based on duration (50 pesos/hour).
-  - Generates a unique reference number for each transaction.
-  - Accepts payment, computes change, and generates a printable receipt.
-  - Service history is updated after each payment.
+- **User-Friendly Interface:**  
+  Intuitive design tailored for attendants, ensuring easy navigation and reducing the learning curve.
 
-- **Service History:**
+- **CRUD for Parking Slots:**  
+  Add, view, update, and delete parking slots (only if not occupied).
 
-  - View all past transactions, including car details, amount paid, time in/out, and reference ID.
-  - Displays total revenue earned.
+- **Service History:**  
+  View all past transactions, including car details, amount paid, time in/out, and reference ID. Displays total revenue earned.
 
-- **Modern UI:**
-  - Custom color palette and fonts for a professional look.
-  - Sidebar navigation with icons.
-  - Responsive layout for different screen sizes.
+## Scope and Limitations
+
+**Scope:**
+
+- Real-time slot monitoring for available and occupied slots.
+- Vehicle logging (plate number, car brand, time in/out).
+- Automated fee computation based on duration.
+- Digital ticketing/receipt for clear transaction records.
+- Database storage for vehicle and transaction records.
+- User-friendly interface for staff.
+- Designed for desktop use (Java Swing).
+
+**Limitations:**
+
+- **Hardware Compatibility:** Real-time monitoring depends on manual updates or integration with external sensors; without hardware, slot data may be less reliable.
+- **Attendant-Operated Only:** No direct customer or self-service functionality; designed for staff use.
+- **No Advanced Features:** Mobile payment, reservations, and customer self-service are not implemented.
+- **Manual Data Entry:** Relies on attendants to input vehicle information, which may introduce errors.
+- **No Customer Dispute Handling:** Lacks integrated features for managing complaints, disputes, or refunds.
 
 ## Programming Languages & Technologies Used
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
-![Swing](https://img.shields.io/badge/Swing-007396?style=for-the-badge&logo=java&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![NetBeans IDE](https://img.shields.io/badge/NetBeans_IDE-1B6AC6?style=for-the-badge&logo=apache-netbeans-ide&logoColor=white)
+<div>
+  <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Swing-007396?style=for-the-badge&logo=java&logoColor=white"/>
+  <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/>
+  <img src="https://img.shields.io/badge/NetBeans_IDE-1B6AC6?style=for-the-badge&logo=apache-netbeans-ide&logoColor=white"/>
+</div>
 
 - **Java** (JDK 15+)
 - **Java Swing** (for GUI)
