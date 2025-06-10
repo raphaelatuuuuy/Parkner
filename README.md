@@ -1,7 +1,7 @@
 # <div align="center">Parkner Parking Management System</div>
 
 <div align="center">
-  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220"/>
+  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220" height/>
 </div>
 
 ## About
@@ -22,29 +22,43 @@ This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PRO
 
 ## Features
 
-- **Real-Time Slot Monitoring:**  
-  View the total number of parking spaces and monitor their availability as cars come and go.
+- **CRUD for Parking Slots:**
 
-- **Vehicle Entry and Exit Logging:**  
-  Digitally log vehicle details such as parking slot, car brand, plate number, time-in, and running time.
+  - **Create:** Add new parking slots to the system.
+  - **Read:** View all parking slots and their statuses (Available/Unavailable).
+  - **Update:** Change the status of parking slots (e.g., mark as available/unavailable).
+  - **Delete:** Remove parking slots (only if not occupied).
+
+- **Vehicle Management:**
+
+  - Park a car by entering car brand and license plate.
+  - Assigns the lowest-numbered available slot automatically.
+  - Tracks time-in for each parked vehicle.
+  - Only displays slots that are currently occupied (hides empty slots in the dashboard).
+
+- **Payment & Checkout:**
+
+  - Calculates parking fee automatically based on entry and exit times (50 pesos/hour).
+  - Generates a unique reference number for each transaction.
+  - Accepts payment, computes change, and generates a printable receipt.
+  - Clears the slot and removes the car from the dashboard upon checkout.
+
+- **Service History:**
+
+  - View all past transactions, including car details, amount paid, time in/out, and reference ID.
+  - Displays total revenue earned.
 
 - **Digital Record-Keeping:**  
   All parking transactions and customer information are securely stored in a database for easy retrieval and improved data management.
 
-- **Automated Fee Calculation:**  
-  The system automatically calculates parking fees based on recorded entry and exit times, minimizing miscalculations.
-
-- **Receipt Generation:**  
-  Customers receive digital receipts before exiting, ensuring reliable records and transparency.
-
 - **User-Friendly Interface:**  
   Intuitive design tailored for attendants, ensuring easy navigation and reducing the learning curve.
 
-- **CRUD for Parking Slots:**  
-  Add, view, update, and delete parking slots (only if not occupied).
+- **Real-Time Slot Monitoring:**  
+  View the total number of parking spaces and monitor their availability as cars come and go.
 
-- **Service History:**  
-  View all past transactions, including car details, amount paid, time in/out, and reference ID. Displays total revenue earned.
+- **Receipt Generation:**  
+  Customers receive digital receipts before exiting, ensuring reliable records and transparency.
 
 ## Scope and Limitations
 
