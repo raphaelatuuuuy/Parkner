@@ -22,31 +22,34 @@ This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PRO
 
 ## Features
 
-- **CRUD for Parking Slots:**
+- **Parking Slot Management:**
 
-  - **Create:** Add new parking slots to the system.
-  - **Read:** View all parking slots and their statuses (Available/Unavailable).
-  - **Update:** Change the status of parking slots (e.g., mark as available/unavailable).
-  - **Delete:** Remove parking slots (only if not occupied).
+  - Add, update, or remove parking slots (CRUD operations).
+  - View all parking slots and their statuses (Available/Unavailable).
+  - Change the status of parking slots (e.g., mark as available/unavailable).
+  - Only allow deletion of slots that are not occupied.
 
-- **Vehicle Management:**
+- **Vehicle Entry & Exit:**
 
   - Park a car by entering car brand and license plate.
   - Assigns the lowest-numbered available slot automatically.
   - Tracks time-in for each parked vehicle.
   - Only displays slots that are currently occupied (hides empty slots in the dashboard).
+  - Remove a car from a slot after payment and checkout.
 
-- **Payment & Checkout:**
+- **Payment & Receipt Generation:**
 
   - Calculates parking fee automatically based on entry and exit times (50 pesos/hour).
   - Generates a unique reference number for each transaction.
   - Accepts payment, computes change, and generates a printable receipt.
+  - Print receipt dialog appears after successful payment.
   - Clears the slot and removes the car from the dashboard upon checkout.
 
-- **Service History:**
+- **Service History & Reporting:**
 
   - View all past transactions, including car details, amount paid, time in/out, and reference ID.
   - Displays total revenue earned.
+  - Search and filter service history records.
 
 - **Digital Record-Keeping:**  
   All parking transactions and customer information are securely stored in a database for easy retrieval and improved data management.
@@ -57,7 +60,10 @@ This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PRO
 - **Real-Time Slot Monitoring:**  
   View the total number of parking spaces and monitor their availability as cars come and go.
 
-- **Receipt Generation:**  
+- **Automated Fee Computation:**  
+  System automatically computes parking fees and change based on duration.
+
+- **Printable Receipts:**  
   Customers receive digital receipts before exiting, ensuring reliable records and transparency.
 
 ## Scope and Limitations

@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package parking;
 
 import java.awt.Color;
@@ -21,8 +16,6 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -35,116 +28,130 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
-/**
- *
- * @author godfr
- */
+// Main dashboard for parking management system
 public class Main_dashboard extends javax.swing.JFrame {
 
-    // --- Color Palette ---
-    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0); // #E6B400 (darker yellow)
-    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);   // #D4A300 (darker gold)
-    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);    // #FAFAFA (softer white)
-    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);     // #141414 (softer black)
-    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);  // #333333
-    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242); // #F2F2F2
-    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71); // #43A047
-    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0); // #FF9100
-    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(229, 115, 115);   // #E57373 (soft red for delete and revenue border)
-    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189); // #BDBDBD
-    private static final java.awt.Color COLOR_TABLE_SELECTION = new java.awt.Color(255, 236, 179); // #FFECA3 (light yellow)
-    private static final java.awt.Color COLOR_TABLE_ROW_ALT = new java.awt.Color(252, 243, 207); // #FCF3CF (very light yellow)
+    // Color palette for UI
+    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
+    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);
+    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);
+    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);
+    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);
+    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242);
+    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71);
+    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0);
+    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(229, 115, 115);
+    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189);
+    private static final java.awt.Color COLOR_TABLE_SELECTION = new java.awt.Color(255, 236, 179);
+    private static final java.awt.Color COLOR_TABLE_ROW_ALT = new java.awt.Color(252, 243, 207);
 
-    /**
-     * Creates new form Main_dashboard
-     */
+    // Variables for managing state and UI
     int manage_selected = -1;
     int manage_num_row = 1;
-    
     Connection conn = new dbConnect().dbcon();
-    
-    // Map to store time_in (as Date) for each parking spot id
     private Map<Integer, java.util.Date> runningTimeMap = new HashMap<>();
     private Timer runningTimeTimer;
-
-    // Add a label for total revenue
     private javax.swing.JLabel totalRevenueLabel = new javax.swing.JLabel();
-
-    // Add a panel to hold the total revenue label
     private javax.swing.JPanel revenuePanel = new javax.swing.JPanel();
-
-    // Add this field to store computed hours for payment
     private int computedHours = 1;
-
-    // Add this field to show available slots
     private javax.swing.JLabel availableSlotsLabel = new javax.swing.JLabel();
+    private javax.swing.JTextField historySearchField = new javax.swing.JTextField();
+    private javax.swing.JLabel historySearchIcon = new javax.swing.JLabel();
+    private javax.swing.table.TableRowSorter<DefaultTableModel> historyRowSorter;
+    private javax.swing.JLabel dateTimeLabel = new javax.swing.JLabel();
+    private Timer dateTimeTimer;
 
+    // Constructor: sets up the dashboard and UI
     public Main_dashboard() {
+        // Setup UI and tables
         initComponents();
         initTableSales();
         initTableHistory();
         centerFrame();
-
         panel_sales.setVisible(true);
         panel_manage.setVisible(false);
         panel_history.setVisible(false);
-
         main_panel.requestFocusInWindow();
-
         initTableManage();
-
-        // Disable pay button and hours input initially
         setReturnCarFieldsEnabled(false);
 
-        // Add focus listener to sales_hours to prevent input if no car is selected
         sales_hours.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
-                // Do nothing here, remove dialog from focus event
                 if (sales_id_out.getText().trim().isEmpty()) {
                     sales_hours.setText("");
                     sales_hours.setEnabled(false);
                 }
             }
         });
-        // startRunningTimeTimer(); // Moved to the end of the constructor
 
-        // --- TOTAL REVENUE LABEL: Place at the bottom of Service History panel, always visible ---
+        // Setup revenue label and search field
         totalRevenueLabel.setText("Total Revenue: 0 pesos");
         totalRevenueLabel.setFont(new Font("Inter", Font.BOLD, 18));
         totalRevenueLabel.setForeground(COLOR_PRIMARY_YELLOW);
         totalRevenueLabel.setOpaque(true);
         totalRevenueLabel.setBackground(new Color(254, 240, 241));
         totalRevenueLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_PRIMARY_YELLOW, 2, true), // use soft red border
+            BorderFactory.createLineBorder(COLOR_PRIMARY_YELLOW, 2, true),
             BorderFactory.createEmptyBorder(8, 16, 8, 16)
         ));
 
-        revenuePanel.setLayout(new java.awt.BorderLayout());
-        revenuePanel.setBackground(new Color(254, 240, 241));
-        revenuePanel.add(totalRevenueLabel, java.awt.BorderLayout.CENTER);
-        revenuePanel.setBounds(0, 590, 890, 40); // width matches panel_history, y=bottom
+        historySearchField.setFont(new Font("Inter", Font.PLAIN, 16));
+        historySearchField.setToolTipText("Search a record here");
+        historySearchField.setColumns(16);
+        historySearchField.setPreferredSize(new java.awt.Dimension(200, 32));
+        historySearchField.setMaximumSize(new java.awt.Dimension(200, 32));
+        historySearchField.setMinimumSize(new java.awt.Dimension(120, 32));
+        historySearchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 1, true),
+            BorderFactory.createEmptyBorder(4, 36, 4, 8)
+        ));
+        historySearchField.setText("");
+        historySearchField.putClientProperty("JTextField.placeholderText", "Search a record here");
 
-        // Remove any previous instance and add revenuePanel at the bottom
+        java.net.URL searchIconUrl = getClass().getResource("/asset/icons/search.png");
+        if (searchIconUrl != null) {
+            ImageIcon icon = new ImageIcon(new ImageIcon(searchIconUrl).getImage().getScaledInstance(20, 20, java.awt.Image.SCALE_SMOOTH));
+            historySearchIcon.setIcon(icon);
+        }
+        historySearchIcon.setOpaque(false);
+        historySearchIcon.setBounds(8, 8, 20, 20);
+
+        javax.swing.JLayeredPane searchLayeredPane = new javax.swing.JLayeredPane();
+        searchLayeredPane.setPreferredSize(new java.awt.Dimension(220, 32));
+        searchLayeredPane.setLayout(null);
+        historySearchField.setBounds(0, 0, 200, 32);
+        historySearchIcon.setBounds(8, 6, 20, 20);
+        searchLayeredPane.add(historySearchField, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        searchLayeredPane.add(historySearchIcon, javax.swing.JLayeredPane.PALETTE_LAYER);
+
+        historySearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterHistoryTable(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterHistoryTable(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterHistoryTable(); }
+        });
+
+        javax.swing.JPanel revenueSearchPanel = new javax.swing.JPanel(new java.awt.BorderLayout(10, 0));
+        revenueSearchPanel.setBackground(new Color(254, 240, 241));
+        revenueSearchPanel.add(totalRevenueLabel, java.awt.BorderLayout.WEST);
+        revenueSearchPanel.add(searchLayeredPane, java.awt.BorderLayout.EAST);
+        revenueSearchPanel.setBounds(0, 590, 890, 40);
+
         panel_history.remove(totalRevenueLabel);
-        panel_history.add(revenuePanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 590, 890, 40));
-        panel_history.setComponentZOrder(revenuePanel, 0);
+        panel_history.add(revenueSearchPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 590, 890, 40));
+        panel_history.setComponentZOrder(revenueSearchPanel, 0);
 
-        // Adjust the scroll pane height so it doesn't overlap the revenue panel
-        jScrollPane3.setBounds(0, 0, 890, 590); // 590 = 630(panel height) - 40(label height)
-        panel_history.setLayout(null); // Use absolute layout for precise placement
+        jScrollPane3.setBounds(0, 0, 890, 590);
+        panel_history.setLayout(null);
         panel_history.add(jScrollPane3);
 
         updateTotalRevenue();
 
-        // Set JOptionPane font to Inter for all dialogs
         try {
             UIManager.put("OptionPane.messageFont", new FontUIResource(new Font("Inter", Font.PLAIN, 14)));
             UIManager.put("OptionPane.buttonFont", new FontUIResource(new Font("Inter", Font.PLAIN, 13)));
-        } catch (Exception e) {
-            // Ignore if Inter is not available
-        }
+        } catch (Exception e) {}
 
-        // Set icon sizes to 40x40 for all buttons with icons
+        // Set icons for buttons
         java.net.URL url;
         url = getClass().getResource("/asset/icons/payment_history.png");
         if (url != null) {
@@ -175,7 +182,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             btn_add.setIcon(new ImageIcon(new javax.swing.ImageIcon(url).getImage().getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH)));
         }
 
-         // --- Add logo.png at the lowermost part of the sidebar ---
+        // Add logo and credit label to sidebar
         try {
             url = getClass().getResource("/asset/icons/parkner-logo.png");
             if (url != null) {
@@ -185,112 +192,81 @@ public class Main_dashboard extends javax.swing.JFrame {
                 );
                 JLabel logoLabel = new JLabel(logoIcon);
                 logoLabel.setHorizontalAlignment(JLabel.CENTER);
-                // Center horizontally, place at the bottom (x= -5 to center in 210px panel, y=410 for 220px logo)
                 jPanel2.add(logoLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(-5, 480, 220, 220));
-
-                // Add credit text just below the logo, centered and a bit higher
                 JLabel creditLabel = new JLabel("@Parkner 2025");
                 creditLabel.setFont(new Font("Inter", Font.ITALIC, 10));
                 creditLabel.setHorizontalAlignment(JLabel.CENTER);
                 jPanel2.add(creditLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 600, 210, 20));
             }
-        } catch (Exception e) {
-            // If logo not found, do nothing
-        }
-        
-        // --- Apply new color palette to main dashboard ---
+        } catch (Exception e) {}
+
+        // Set colors for panels and buttons
         main_panel.setBackground(COLOR_BG_WHITE);
         panel_sales.setBackground(COLOR_PANEL_LIGHTGRAY);
         panel_manage.setBackground(COLOR_PANEL_LIGHTGRAY);
         panel_history.setBackground(COLOR_PANEL_LIGHTGRAY);
         jPanel2.setBackground(COLOR_BORDER_GRAY);
         footer.setBackground(COLOR_BORDER_GRAY);
-
-        // Sidebar
         jPanel2.setBackground(COLOR_BORDER_GRAY);
         jLabel1.setForeground(COLOR_TEXT_BLACK);
         jLabel2.setForeground(COLOR_TEXT_DARKGRAY);
         jLabel13.setForeground(COLOR_TEXT_DARKGRAY);
-
-        // Sidebar buttons
         jButton1.setBackground(COLOR_PRIMARY_YELLOW);
         jButton1.setForeground(COLOR_TEXT_BLACK);
         jButton2.setBackground(COLOR_PRIMARY_YELLOW);
         jButton2.setForeground(COLOR_TEXT_BLACK);
         jButton3.setBackground(COLOR_PRIMARY_YELLOW);
         jButton3.setForeground(COLOR_TEXT_BLACK);
-
-        // Add/Update/Delete buttons
         sales_btnAdd.setBackground(COLOR_PRIMARY_YELLOW);
         sales_btnAdd.setForeground(COLOR_TEXT_BLACK);
         btn_update.setBackground(COLOR_ACCENT_GOLD);
         btn_update.setForeground(COLOR_TEXT_BLACK);
-        btn_delete.setBackground(COLOR_ERROR_RED); // now darker
+        btn_delete.setBackground(COLOR_ERROR_RED);
         btn_delete.setForeground(COLOR_BG_WHITE);
         btn_add.setBackground(COLOR_SUCCESS_GREEN);
         btn_add.setForeground(COLOR_BG_WHITE);
-
-        // Pay button
         sales_btn_pay.setBackground(COLOR_SUCCESS_GREEN);
         sales_btn_pay.setForeground(COLOR_BG_WHITE);
 
-        // Table headers
+        // Table header and row color setup
         JTableHeader salesHeader = table_sales.getTableHeader();
         salesHeader.setBackground(COLOR_PRIMARY_YELLOW);
         salesHeader.setForeground(COLOR_TEXT_BLACK);
         salesHeader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-
         JTableHeader manageHeader = table_manage.getTableHeader();
         manageHeader.setBackground(COLOR_PRIMARY_YELLOW);
         manageHeader.setForeground(COLOR_TEXT_BLACK);
         manageHeader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-
         JTableHeader historyHeader = table_history.getTableHeader();
         historyHeader.setBackground(COLOR_PRIMARY_YELLOW);
         historyHeader.setForeground(COLOR_TEXT_BLACK);
         historyHeader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-
-        // Table rows and selection
         table_sales.setBackground(COLOR_PANEL_LIGHTGRAY);
         table_sales.setForeground(COLOR_TEXT_BLACK);
         table_sales.setSelectionBackground(COLOR_TABLE_SELECTION);
         table_sales.setSelectionForeground(COLOR_TEXT_BLACK);
-
         table_manage.setBackground(COLOR_PANEL_LIGHTGRAY);
         table_manage.setForeground(COLOR_TEXT_BLACK);
         table_manage.setSelectionBackground(COLOR_TABLE_SELECTION);
         table_manage.setSelectionForeground(COLOR_TEXT_BLACK);
-
         table_history.setBackground(COLOR_PANEL_LIGHTGRAY);
         table_history.setForeground(COLOR_TEXT_BLACK);
         table_history.setSelectionBackground(COLOR_TABLE_SELECTION);
         table_history.setSelectionForeground(COLOR_TEXT_BLACK);
 
-        // Hide the "Parking Slot" column (index 0) in table_sales
+        // Hide Parking Slot column in some tables
         if (table_sales.getColumnModel().getColumnCount() > 0) {
             table_sales.getColumnModel().getColumn(0).setMinWidth(0);
             table_sales.getColumnModel().getColumn(0).setMaxWidth(0);
             table_sales.getColumnModel().getColumn(0).setWidth(0);
         }
-
-        // --- DO NOT HIDE the "Parking Slot" column in table_manage ---
-        // (Remove or comment out the following block to keep the column visible)
-        /*
-        if (table_manage.getColumnModel().getColumnCount() > 0) {
-            table_manage.getColumnModel().getColumn(0).setMinWidth(0);
-            table_manage.getColumnModel().getColumn(0).setMaxWidth(0);
-            table_manage.getColumnModel().getColumn(0).setWidth(0);
-        }
-        */
-
-        // Hide the "Parking Slot" column (index 0) in table_history
         if (table_history.getColumnModel().getColumnCount() > 0) {
             table_history.getColumnModel().getColumn(0).setMinWidth(0);
             table_history.getColumnModel().getColumn(0).setMaxWidth(0);
             table_history.getColumnModel().getColumn(0).setWidth(0);
         }
 
-        // Alternate row color for tables (including history table)
+        // Alternate row color for tables
         DefaultTableCellRenderer altRowRenderer = new DefaultTableCellRenderer() {
             @Override
             public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -301,7 +277,6 @@ public class Main_dashboard extends javax.swing.JFrame {
                     c.setBackground(COLOR_TABLE_SELECTION);
                 }
                 c.setForeground(COLOR_TEXT_BLACK);
-                // Center all cell text
                 setHorizontalAlignment(JLabel.CENTER);
                 return c;
             }
@@ -315,16 +290,15 @@ public class Main_dashboard extends javax.swing.JFrame {
         for (int i = 0; i < table_history.getColumnCount(); i++) {
             table_history.getColumnModel().getColumn(i).setCellRenderer(altRowRenderer);
         }
-
-        // Revenue panel
         totalRevenueLabel.setBackground(COLOR_ACCENT_GOLD);
         totalRevenueLabel.setForeground(COLOR_TEXT_BLACK);
         revenuePanel.setBackground(COLOR_PANEL_LIGHTGRAY);
         revenuePanel.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
-
-        // --- END OF COLOR PALETTE ---
+        historyRowSorter = new javax.swing.table.TableRowSorter<>((DefaultTableModel) table_history.getModel());
+        table_history.setRowSorter(historyRowSorter);
     }
-    
+
+    // Loads the table with cars currently parked
     public void initTableSales(){
         DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
         // Remove combo box for slot selection
@@ -432,15 +406,16 @@ public class Main_dashboard extends javax.swing.JFrame {
         // Apply alternate row renderer after updating model
         applyAlternateRowRenderer(table_sales);
     }
-    
+
+    // Loads the table with parking slot status
     public void initTableManage(){
         DefaultTableModel model = (DefaultTableModel) table_manage.getModel();
         model.setRowCount(0);
         manage_num_row = 1;
-        
+
         Statement st;
         ResultSet rs;
-        
+
         String pList = "";
         try{
             st = (Statement) conn.createStatement();
@@ -455,7 +430,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         } catch(SQLException ex){
             System.out.print(ex);
         }
-        
+
         //Header column
         JTableHeader theader = table_manage.getTableHeader();
         theader.setBackground(COLOR_PRIMARY_YELLOW);
@@ -469,18 +444,19 @@ public class Main_dashboard extends javax.swing.JFrame {
         // Change column header to "Parking Slot"
         table_manage.getColumnModel().getColumn(0).setHeaderValue("Parking Slot");
         table_manage.getColumnModel().getColumn(1).setHeaderValue("Status");
-        
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment( JLabel.CENTER );
         table_manage.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         table_manage.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        
+
         table_manage.setRowHeight(30);
         table_manage.setFont(new Font("Inter", Font.PLAIN, 16));
         // Apply alternate row renderer after updating model
         applyAlternateRowRenderer(table_manage);
     }
-    
+
+    // Loads the service history table
     private void initTableHistory(){
         DefaultTableModel model = (DefaultTableModel) table_history.getModel();
         model.setRowCount(0);
@@ -490,16 +466,32 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         try{
             st = (Statement) conn.createStatement();
+            // Fetch date_in from report
             String sql = "SELECT * FROM report";
             rs = st.executeQuery(sql);
 
             while(rs.next()){
-                // Add time_in, time_out, and reference_id to the row
+                // Format date_in as "MMMM dd, yyyy"
+                String dateInRaw = rs.getString("date_in");
+                String formattedDate = dateInRaw;
+                if (dateInRaw != null && !dateInRaw.trim().isEmpty()) {
+                    try {
+                        java.text.SimpleDateFormat dbFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                        java.text.SimpleDateFormat displayFormat = new java.text.SimpleDateFormat("MMMM dd, yyyy");
+                        java.util.Date date = dbFormat.parse(dateInRaw);
+                        formattedDate = displayFormat.format(date);
+                    } catch (Exception e) {
+                        // fallback to raw if parsing fails
+                        formattedDate = dateInRaw;
+                    }
+                }
+                // Add time_in, time_out, reference_id, and formatted date_in to the row
                 model.addRow(new Object[]{
                     rs.getInt("id"),
                     rs.getString("gen"),
                     rs.getString("regis"),
                     rs.getInt("totalPrice"),
+                    formattedDate, // <-- formatted date_in here
                     rs.getString("time_in"),
                     rs.getString("time_out"),
                     rs.getString("reference_id")
@@ -509,13 +501,12 @@ public class Main_dashboard extends javax.swing.JFrame {
             System.out.print(ex);
         }
 
-        //Header column
+        // Update table headers to include Date
         JTableHeader theader = table_history.getTableHeader();
         theader.setBackground(COLOR_PRIMARY_YELLOW);
         theader.setForeground(COLOR_TEXT_BLACK);
         theader.setFont(new Font("Inter", Font.PLAIN, 18));
         theader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-        // Center header text
         DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) theader.getDefaultRenderer();
         headerRenderer.setHorizontalAlignment(JLabel.CENTER);
 
@@ -527,11 +518,11 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         table_history.setRowHeight(30);
         table_history.setFont(new Font("Inter", Font.PLAIN, 16));
-        // Apply alternate row renderer after updating model
         applyAlternateRowRenderer(table_history);
-        updateTotalRevenue(); // Update revenue after loading history
+        updateTotalRevenue();
     }
-    
+
+    // Centers the dashboard window on the screen
     public void centerFrame() {
 
             Dimension windowSize = getSize();
@@ -545,6 +536,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             main_panel.requestFocusInWindow();
     }
 
+    // UI setup (auto-generated)
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -673,6 +665,30 @@ public class Main_dashboard extends javax.swing.JFrame {
         jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabel13.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         jPanel2.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 110, 180, 20));
+
+        // --- Date and Time label above Parkner logo in sidebar ---
+        dateTimeLabel.setFont(new Font("Inter", Font.BOLD, 10));
+        dateTimeLabel.setForeground(COLOR_TEXT_BLACK);
+        dateTimeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        // Lower the label to below the Service History button and above the logo
+        // Service History button y=360, height=50, logo y=410, so use y=420
+        dateTimeLabel.setBounds(0, 420, 210, 30);
+        updateDateTimeLabel();
+        // Timer to update every second for real running time
+        dateTimeTimer = new Timer(1000, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                updateDateTimeLabel();
+                // Animate the label horizontally (simple left-right movement)
+                int baseX = 0;
+                int amplitude = 20; // pixels to move left/right
+                long time = System.currentTimeMillis() / 1000;
+                int offset = (int) (Math.sin(time % 60 / 60.0 * 2 * Math.PI) * amplitude);
+                dateTimeLabel.setLocation(baseX + offset, 420);
+            }
+        });
+        dateTimeTimer.setInitialDelay(0);
+        dateTimeTimer.start();
+        jPanel2.add(dateTimeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 420, 210, 30));
 
         // --- Add logo.png at the lowermost part of the sidebar ---
         try {
@@ -929,7 +945,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         // Enter Number of Hours
         jLabel10.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 12));
-        jLabel10.setText("Enter Number of Hours");
+        jLabel10.setText("Estimated No. of Hours");
         panel_sales.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(payLabelX, payLabelY, 150, payLabelHeight));
         sales_hours.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 14));
         sales_hours.setHorizontalAlignment(javax.swing.JTextField.CENTER);
@@ -968,7 +984,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Parking Slot", "Car Brand", "License Plate", "Amount Paid", "Time In", "Time Out", "Reference ID"
+                "Parking Slot", "Car Brand", "License Plate", "Amount Paid", "Date", "Time In", "Time Out", "Reference ID"
             }
         ));
         table_history.setAlignmentX(0.0F);
@@ -1125,6 +1141,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    // Handles Parking Slot sidebar button click
     private void jButton3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton3MouseClicked
         panel_sales.setVisible(false);
         panel_manage.setVisible(true);
@@ -1139,12 +1156,14 @@ public class Main_dashboard extends javax.swing.JFrame {
         combo.setEnabled(false);
     }//GEN-LAST:event_jButton3MouseClicked
 
+    // Handles Dashboard sidebar button click
     private void jButton2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton2MouseClicked
         panel_sales.setVisible(true);
         panel_manage.setVisible(false);
         panel_history.setVisible(false);
     }//GEN-LAST:event_jButton2MouseClicked
 
+    // Handles Service History sidebar button click
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
         panel_sales.setVisible(false);
         panel_manage.setVisible(false);
@@ -1154,6 +1173,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         updateTotalRevenue(); // Ensure revenue is updated when switching to history
     }//GEN-LAST:event_jButton1MouseClicked
 
+    // Handles Edit Status button click for parking slots
     private void btn_updateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_updateMouseClicked
         // Prevent action if button is disabled
         if (!btn_update.isEnabled()) {
@@ -1187,6 +1207,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btn_updateMouseClicked
 
+    // Handles Delete Slot button click for parking slots
     private void btn_deleteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_deleteMouseClicked
         // Prevent action if button is disabled
         if (!btn_delete.isEnabled()) {
@@ -1265,6 +1286,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btn_deleteMouseClicked
 
+    // Handles click on a row in the manage table
     private void table_manageMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_manageMouseClicked
         int selected = (int) table_manage.getValueAt(table_manage.getSelectedRow(), 0);
 
@@ -1322,6 +1344,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         manage_update.setVisible(false);
     }//GEN-LAST:event_table_manageMouseClicked
 
+    // Handles Add Slot button click
     private void btn_addMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_addMouseClicked
         PreparedStatement pt = null;
 
@@ -1345,6 +1368,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btn_addMouseClicked
 
+    // Handles Add Car button click
     private void sales_btnAddMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btnAddMouseClicked
     // If button is disabled, show dialog and return
     if (!sales_btnAdd.isEnabled()) {
@@ -1396,6 +1420,8 @@ public class Main_dashboard extends javax.swing.JFrame {
 
     // Get current time for Time In
     String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+    // Get current date for Date In
+    String dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
 
     // Add Time In and assigned slot to confirmation dialog
     String confirmMsg = "Please confirm the following details:\n"
@@ -1406,7 +1432,8 @@ public class Main_dashboard extends javax.swing.JFrame {
     if (confirm == JOptionPane.YES_OPTION) {
         PreparedStatement pt = null;
         try{
-            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "' WHERE id=" + selectSlot;
+            // Save date_in as well
+            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "', date_in='" + dateIn + "' WHERE id=" + selectSlot;
             pt = conn.prepareStatement(sql);
             pt.execute();
             initTableManage();
@@ -1428,6 +1455,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     }
 }//GEN-LAST:event_sales_btnAddMouseClicked
 
+    // Handles click on a row in the sales table
     int id;
     String gen, regis;
     private void table_salesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_salesMouseClicked
@@ -1461,6 +1489,7 @@ public class Main_dashboard extends javax.swing.JFrame {
                         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
                         java.util.Date parsedTime = sdf.parse(timeInStr);
                         java.util.Calendar cal = java.util.Calendar.getInstance();
+
                         java.util.Calendar now = java.util.Calendar.getInstance();
                         cal.setTime(parsedTime);
                         // Set the date part to today
@@ -1510,7 +1539,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_table_salesMouseClicked
 
-    // Utility to enable/disable return car fields
+    // Enables or disables the Pay & Exit fields
     private void setReturnCarFieldsEnabled(boolean enabled) {
         sales_id_out.setEnabled(false); // always disabled (output only)
         sales_gen_out.setEnabled(false); // always disabled (output only)
@@ -1529,6 +1558,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }
 
+    // Handles Pay button click
     private void sales_btn_payMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btn_payMouseClicked
         // Prevent pay if no car is selected
         if (sales_id_out.getText().trim().isEmpty()) {
@@ -1574,20 +1604,13 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_sales_btn_payMouseClicked
 
+    // Handles click on a row in the history table
     private void table_historyMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_historyMouseClicked
         // TODO add your handling code here:
     }//GEN-LAST:event_table_historyMouseClicked
 
-    /**
-     * @param args the command line arguments
-     */
-   
+    // Main method to run the dashboard
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -1661,7 +1684,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     private javax.swing.JTable table_sales;
     // End of variables declaration//GEN-END:variables
 
-    // Method to update total revenue label
+    // Updates the total revenue label
     private void updateTotalRevenue() {
         try {
             Statement st = conn.createStatement();
@@ -1676,12 +1699,12 @@ public class Main_dashboard extends javax.swing.JFrame {
         }
     }
     
-    // Add a public method so receip can trigger revenue update after payment
+    // Public method to refresh revenue (used by receipt window)
     public void refreshTotalRevenue() {
         updateTotalRevenue();
     }
 
-    // Utility method to apply alternate row renderer to a table
+    // Applies alternate row coloring to a table
     private void applyAlternateRowRenderer(javax.swing.JTable table) {
         DefaultTableCellRenderer altRowRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -1693,7 +1716,7 @@ public class Main_dashboard extends javax.swing.JFrame {
                     c.setBackground(COLOR_TABLE_SELECTION);
                 }
                 c.setForeground(COLOR_TEXT_BLACK);
-                // Center all cell text
+                // Center header text
                 setHorizontalAlignment(JLabel.CENTER);
             return c;
             }
@@ -1707,7 +1730,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         headerRenderer.setHorizontalAlignment(JLabel.CENTER);
     }
 
-    // Add this method if missing
+    // Starts timer to update running time for parked cars
     private void startRunningTimeTimer() {
         runningTimeTimer = new Timer(60000, new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -1737,5 +1760,24 @@ public class Main_dashboard extends javax.swing.JFrame {
             }
         });
         runningTimeTimer.start();
+    }
+
+    // Filters the history table based on search input
+    private void filterHistoryTable() {
+        String text = historySearchField.getText();
+        if (historyRowSorter == null) return;
+        if (text == null || text.trim().isEmpty()) {
+            historyRowSorter.setRowFilter(null);
+        } else {
+            String expr = "(?i)" + java.util.regex.Pattern.quote(text.trim());
+            historyRowSorter.setRowFilter(javax.swing.RowFilter.regexFilter(expr));
+        }
+    }
+
+    // Updates the date and time label in the sidebar
+    private void updateDateTimeLabel() {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("'Today is' MMMM d, yyyy, h:mm:ss a");
+        String now = sdf.format(new java.util.Date());
+        dateTimeLabel.setText(now);
     }
 }

@@ -16,17 +16,6 @@ USE `parking`;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2025-06-09 13:27:48
 
 --
 -- Table structure for table `parking_store`
@@ -41,9 +30,20 @@ CREATE TABLE `parking_store` (
   `gen` varchar(50) NOT NULL,
   `regis` varchar(10) NOT NULL,
   `reference_id` int DEFAULT NULL,
-  `time_in` varchar(20) DEFAULT NULL
+  `time_in` varchar(20) DEFAULT NULL,
+  `date_in` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+-- Sample data for parking_store
+LOCK TABLES `parking_store` WRITE;
+INSERT INTO `parking_store` VALUES
+  (1,0,'Toyota','ABC-1234',12345678,'08:15 AM','2025-06-11'),
+  (2,1,'','',NULL,NULL,NULL),
+  (3,0,'Honda','XYZ-5678',87654321,'09:30 AM','2025-06-11'),
+  (4,1,'','',NULL,NULL,NULL),
+  (5,0,'Ford','DEF-4321',23456789,'10:45 AM','2025-06-11');
+UNLOCK TABLES;
 
 --
 -- Dumping data for table `parking_store`
@@ -51,20 +51,8 @@ CREATE TABLE `parking_store` (
 
 LOCK TABLES `parking_store` WRITE;
 /*!40000 ALTER TABLE `parking_store` DISABLE KEYS */;
-INSERT INTO `parking_store` VALUES (1,0,'Hanabishi','DWA-2912',35331222,'01:16 PM'),(2,1,'','',NULL,'');
 /*!40000 ALTER TABLE `parking_store` ENABLE KEYS */;
 UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2025-06-09 13:25:30
 
 --
 -- Table structure for table `report`
@@ -81,9 +69,18 @@ CREATE TABLE `report` (
   `change` decimal(10,2) DEFAULT NULL,
   `reference_id` int DEFAULT NULL,
   `time_in` varchar(50) DEFAULT NULL,
-  `time_out` varchar(50) DEFAULT NULL
+  `time_out` varchar(50) DEFAULT NULL,
+  `date_in` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+-- Sample data for report
+LOCK TABLES `report` WRITE;
+INSERT INTO `report` VALUES
+  (1,'Toyota','ABC-1234',100,0.00,12345678,'08:15 AM','10:15 AM','2025-06-11'),
+  (2,'Honda','XYZ-5678',150,0.00,87654321,'09:30 AM','12:00 PM','2025-06-11'),
+  (3,'Ford','DEF-4321',50,0.00,23456789,'10:45 AM','11:45 AM','2025-06-11');
+UNLOCK TABLES;
 
 --
 -- Dumping data for table `report`
@@ -91,20 +88,8 @@ CREATE TABLE `report` (
 
 LOCK TABLES `report` WRITE;
 /*!40000 ALTER TABLE `report` DISABLE KEYS */;
-INSERT INTO `report` VALUES (2,'Toyota','PDW-2463',50,250.00,89974077,'01:16 PM','01:17 PM');
 /*!40000 ALTER TABLE `report` ENABLE KEYS */;
 UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2025-06-09 13:25:30
 
 --
 -- Table structure for table `totalprice`
@@ -138,4 +123,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-09 13:25:30
+-- Dump completed on 2025-06-11 18:50:40

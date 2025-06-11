@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package parking;
 
 import java.awt.Dimension;
@@ -14,36 +9,31 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 
-/**
- *
- * @author godfr
- */
+// This class handles the payment and receipt window
 public class receip extends javax.swing.JFrame {
 
-    // --- Color Palette ---
-    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0); // #E6B400
-    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);   // #D4A300
-    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);    // #FAFAFA
-    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);     // #141414
-    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);  // #333333
-    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242); // #F2F2F2
-    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71); // #43A047
-    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0); // #FF9100
-    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);     // #D32F2F
-    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189); // #BDBDBD
+    // Color palette for UI
+    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
+    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);
+    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);
+    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);
+    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);
+    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242);
+    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71);
+    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0);
+    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);
+    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189);
 
-    /**
-     * Creates new form receip
-     */
+    // Database connection and payment details
     Connection conn = new dbConnect().dbcon();
     private int parkingId;
     private String carBrand;
     private String licensePlate;
     private int totalPrice;
     private javax.swing.JFrame parentDashboard;
-    private String lastReferenceId = null; // Add this field to store the referenceId
+    private String lastReferenceId = null;
 
-    // New constructor to accept payment details
+    // Constructor for payment window with details
     public receip(int parkingId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
         initComponents();
         btn_print.setVisible(false);
@@ -56,18 +46,17 @@ public class receip extends javax.swing.JFrame {
         price.setText(totalPrice + " pesos");
     }
 
+    // Default constructor for testing
     public receip() {
         initComponents();
         btn_print.setVisible(false);
         centerFrame();
-        
         Statement st;
         ResultSet rs;
         try{
             st = (Statement) conn.createStatement();
             String sql = "SELECT price FROM totalprice";
             rs = st.executeQuery(sql);
-            
             while(rs.next()){
                 price.setText(rs.getInt("price") + "pesos");
             }
@@ -75,25 +64,19 @@ public class receip extends javax.swing.JFrame {
             System.out.print(ex);
         }
     }
-    
+
+    // Center the payment window on screen
     public void centerFrame() {
-
-            Dimension windowSize = getSize();
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            Point centerPoint = ge.getCenterPoint();
-
-            int dx = centerPoint.x - windowSize.width / 2;
-            int dy = centerPoint.y - windowSize.height / 2;    
-            setLocation(dx, dy);
+        Dimension windowSize = getSize();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        Point centerPoint = ge.getCenterPoint();
+        int dx = centerPoint.x - windowSize.width / 2;
+        int dy = centerPoint.y - windowSize.height / 2;    
+        setLocation(dx, dy);
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
+    // UI setup for the payment window
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
@@ -152,7 +135,8 @@ public class receip extends javax.swing.JFrame {
                 btn_printMouseClicked(evt);
             }
         });
-        jPanel1.add(btn_print, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 310, 140, -1));
+        // Widen the button and center it
+        jPanel1.add(btn_print, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 310, 260, 40));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -205,6 +189,7 @@ public class receip extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    // Handle Confirm button click for payment
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
         // Validate payment input
         String payText = pay.getText().trim();
@@ -224,46 +209,49 @@ public class receip extends javax.swing.JFrame {
 
         double change = paidAmount - totalPrice;
         receip_show.setText(change > 0 ? (change + " pesos") : "0 pesos");
-        btn_print.setVisible(true);
+        btn_print.setVisible(true); // Show Print Receipt button after successful payment
 
-        // Show confirmation dialog
+        // Confirm payment dialog
         int confirm = javax.swing.JOptionPane.showConfirmDialog(this, "Confirm payment?", "Confirm", javax.swing.JOptionPane.YES_NO_OPTION);
         if (confirm == javax.swing.JOptionPane.YES_OPTION) {
             Statement st;
             ResultSet rs;
             try {
-                // Get the reference_id and time_in from parking_store for this parkingId
+                // Get reference and time info from parking_store
                 String referenceId = null;
                 String timeIn = null;
-                String refSql = "SELECT reference_id, time_in FROM parking_store WHERE id=" + parkingId;
+                String dateIn = null;
+                String refSql = "SELECT reference_id, time_in, date_in FROM parking_store WHERE id=" + parkingId;
                 st = conn.createStatement();
                 rs = st.executeQuery(refSql);
                 if (rs.next()) {
                     referenceId = rs.getString("reference_id");
                     timeIn = rs.getString("time_in");
+                    dateIn = rs.getString("date_in");
                 }
-                lastReferenceId = referenceId; // Store for use in bill
-
-                // Get current time as time_out
+                lastReferenceId = referenceId;
                 String timeOut = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
-
-                // Update totalPrice table
                 String sql = "UPDATE totalPrice SET id=" + parkingId + ", price=" + totalPrice;
                 st.executeUpdate(sql);
 
-                // Insert into report, now including change value, reference_id, time_in, and time_out
-                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out) VALUES (" +
+                // Insert payment record into report
+                String refIdValue = (referenceId == null || referenceId.trim().isEmpty()) ? "NULL" : referenceId;
+                String timeInValue = (timeIn == null) ? "NULL" : ("'" + timeIn + "'");
+                String timeOutValue = (timeOut == null) ? "NULL" : ("'" + timeOut + "'");
+                String dateInValue = (dateIn == null) ? "NULL" : ("'" + dateIn + "'");
+                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in) VALUES (" +
                         parkingId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
-                        (referenceId == null ? "NULL" : ("'" + referenceId + "'")) + ", " +
-                        (timeIn == null ? "NULL" : ("'" + timeIn + "'")) + ", " +
-                        (timeOut == null ? "NULL" : ("'" + timeOut + "'")) + ")";
+                        refIdValue + ", " +
+                        timeInValue + ", " +
+                        timeOutValue + ", " +
+                        dateInValue + ")";
                 st.executeUpdate(sql);
 
-                // Update parking_store: clear gen, regis, reference_id, and time_in
+                // Mark parking slot as available again
                 sql = "UPDATE parking_store SET vailable=true, gen='', regis='', reference_id=NULL, time_in='' WHERE id=" + parkingId;
                 st.executeUpdate(sql);
 
-                // Clear fields in parent dashboard if available
+                // Refresh dashboard after payment
                 if (parentDashboard instanceof Main_dashboard) {
                     Main_dashboard dash = (Main_dashboard) parentDashboard;
                     dash.sales_id_out.setText("");
@@ -272,7 +260,7 @@ public class receip extends javax.swing.JFrame {
                     dash.sales_hours.setText("");
                     dash.initTableManage();
                     dash.initTableSales();
-                    dash.refreshTotalRevenue(); // <-- Update total revenue after payment
+                    dash.refreshTotalRevenue();
                 }
             } catch (SQLException ex) {
                 System.out.print(ex);
@@ -282,15 +270,43 @@ public class receip extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jButton1MouseClicked
 
+    // Handle Print Receipt button click
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
-        // Pass the lastReferenceId to bill
-        new bill(lastReferenceId).setVisible(true);
+        // Show the bill window and print dialog when Print Receipt is clicked
+        bill billWindow = new bill(lastReferenceId);
+        billWindow.pack();
+        billWindow.setLocationRelativeTo(null);
+
+        // Print the bill panel directly
+        java.awt.print.PrinterJob pj = java.awt.print.PrinterJob.getPrinterJob();
+        pj.setJobName("Parking Receipt");
+        pj.setPrintable(new java.awt.print.Printable() {
+            public int print(java.awt.Graphics graphics, java.awt.print.PageFormat pageFormat, int pageIndex) {
+                if (pageIndex > 0) return java.awt.print.Printable.NO_SUCH_PAGE;
+                java.awt.Graphics2D g2d = (java.awt.Graphics2D) graphics;
+                g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+                billWindow.getContentPane().printAll(g2d);
+                return java.awt.print.Printable.PAGE_EXISTS;
+            }
+        });
+        if (pj.printDialog()) {
+            try {
+                pj.print();
+            } catch (java.awt.print.PrinterException exc) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    receip.this,
+                    "Unable to print or save receipt.\n" + exc.getMessage(),
+                    "Print Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+
+        // Optionally close the payment window after printing
         dispose();
     }//GEN-LAST:event_btn_printMouseClicked
 
-    /**
-     * @param args the command line arguments
-     */
+    // Main method for testing
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -323,7 +339,7 @@ public class receip extends javax.swing.JFrame {
         });
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // UI variables
     private javax.swing.JButton btn_print;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
@@ -334,5 +350,4 @@ public class receip extends javax.swing.JFrame {
     private javax.swing.JTextField pay;
     private javax.swing.JLabel price;
     private javax.swing.JLabel receip_show;
-    // End of variables declaration//GEN-END:variables
 }

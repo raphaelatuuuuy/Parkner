@@ -14,27 +14,25 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- *
- * @author godfr
- */
+// Bill window for printing parking receipt
 public class bill extends javax.swing.JFrame {
 
-    // --- Color Palette ---
-    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0); // #E6B400
-    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);   // #D4A300
-    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);    // #FAFAFA
-    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);     // #141414
-    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);  // #333333
-    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242); // #F2F2F2
-    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71); // #43A047
-    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0); // #FF9100
-    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);     // #D32F2F
-    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189); // #BDBDBD
+    // --- Color Palette for UI ---
+    private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
+    private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);
+    private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);
+    private static final java.awt.Color COLOR_TEXT_BLACK = new java.awt.Color(20, 20, 20);
+    private static final java.awt.Color COLOR_TEXT_DARKGRAY = new java.awt.Color(51, 51, 51);
+    private static final java.awt.Color COLOR_PANEL_LIGHTGRAY = new java.awt.Color(242, 242, 242);
+    private static final java.awt.Color COLOR_SUCCESS_GREEN = new java.awt.Color(67, 160, 71);
+    private static final java.awt.Color COLOR_WARNING_ORANGE = new java.awt.Color(255, 145, 0);
+    private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);
+    private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189);
 
+    // Database connection
     Connection conn = new dbConnect().dbcon();
 
-    // Add dynamic labels as class fields
+    // Labels for dynamic receipt info
     private javax.swing.JLabel refLabel;
     private javax.swing.JLabel timeInLabel;
     private javax.swing.JLabel timeInValue;
@@ -43,15 +41,14 @@ public class bill extends javax.swing.JFrame {
     private javax.swing.JLabel totalTimeLabel;
     private javax.swing.JLabel totalTimeValue;
 
-    // Add a constructor that accepts referenceId
+    // Show receipt for given referenceId
     public bill(String referenceId) {
         initComponents();
 
+        // Get transaction info from database
         Statement st;
         ResultSet rs;
-
         try {
-            // Get the latest report for this referenceId
             st = conn.createStatement();
             String sql = "SELECT id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out FROM report WHERE reference_id " +
                          (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
@@ -70,19 +67,17 @@ public class bill extends javax.swing.JFrame {
                 String timeIn = rs.getString("time_in");
                 String timeOut = rs.getString("time_out");
 
-                // name.setText("Parking Slot: " + spotId); // REMOVE this line
-                name.setText(""); // Hide parking slot
+                // Set receipt info
+                name.setText("");
                 carBrandLabel.setText("Car Brand: " + carBrand);
                 licenseLabel.setText("License Plate: " + licensePlate);
-
-                // Set dynamic label texts
                 refLabel.setText("Reference Number: " + (refNum == null ? "N/A" : refNum));
                 timeInLabel.setText("Time In:");
                 timeInValue.setText(timeIn == null ? "N/A" : timeIn);
                 timeOutLabel.setText("Time Out:");
                 timeOutValue.setText(timeOut == null ? "N/A" : timeOut);
 
-                // Compute total time of parking
+                // Calculate total time parked
                 String totalTimeStr = "N/A";
                 if (timeIn != null && timeOut != null) {
                     try {
@@ -90,11 +85,10 @@ public class bill extends javax.swing.JFrame {
                         java.util.Date tIn = sdf.parse(timeIn);
                         java.util.Date tOut = sdf.parse(timeOut);
                         long diffMs = tOut.getTime() - tIn.getTime();
-                        if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // handle overnight
+                        if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
                         long totalSeconds = diffMs / 1000;
                         long hrs = totalSeconds / 3600;
                         long mins = (totalSeconds % 3600) / 60;
-                        // Format: "1hr 5min" or "0hr 30min"
                         totalTimeStr = String.format("%dhr %dmin", hrs, mins);
                     } catch (ParseException e) {
                         totalTimeStr = "N/A";
@@ -103,33 +97,29 @@ public class bill extends javax.swing.JFrame {
                 totalTimeLabel.setText("Total Time:");
                 totalTimeValue.setText(totalTimeStr);
 
-                // Set all values, align right
+                // Set price, vat, total, paid, change
                 price.setText(String.format("P %8.2f", priceValue));
                 price.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                 vat.setText(String.format("P %8.2f", vatValue));
                 vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                 total.setText(String.format("P %8.2f", totalValue));
                 total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-                // Amount Paid (reuse changeLabel/changeValueLabel)
                 changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeLabel.setText("Paid:");
                 changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
                 changeLabel.setBounds(40, 260 + 20, 120, 20);
-
                 changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                 changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
                 changeValueLabel.setBounds(250, 260 + 20, 120, 20);
 
-                // Add a static label for "Change" below Amount Paid
+                // Show change below paid
                 javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
                 changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeLabel2.setText("Change:");
                 changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
                 changeLabel2.setName("dyn_changelabel2");
                 jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260 + 45, 120, 20));
-
                 javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
                 changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -137,13 +127,13 @@ public class bill extends javax.swing.JFrame {
                 changeValueLabel2.setName("dyn_changevalue2");
                 jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
 
-                // Date
+                // Show date
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
                 LocalDateTime now = LocalDateTime.now();
                 date.setText("Date: " + dtf.format(now));
             } else {
-                // Show error if nothing found
-                name.setText(""); // Hide parking slot even if not found
+                // If no record found, show empty
+                name.setText("");
                 carBrandLabel.setText("");
                 licenseLabel.setText("");
                 price.setText("");
@@ -164,20 +154,13 @@ public class bill extends javax.swing.JFrame {
         }
     }
 
-    // Default constructor for compatibility
+    // Default constructor
     public bill() {
         this(null);
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // Build the receipt UI
     private void initComponents() {
-
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -195,7 +178,7 @@ public class bill extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         date = new javax.swing.JLabel();
 
-        // --- Add dynamic labels (split label and value for alignment) ---
+        // Dynamic labels for receipt info
         refLabel = new javax.swing.JLabel();
         refLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.BOLD, 13));
         refLabel.setText("Reference Number:");
@@ -205,58 +188,31 @@ public class bill extends javax.swing.JFrame {
         timeInValue = new javax.swing.JLabel();
         timeInValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
         timeInValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
         timeOutLabel = new javax.swing.JLabel();
         timeOutLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
         timeOutLabel.setText("Time Out:");
         timeOutValue = new javax.swing.JLabel();
         timeOutValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
         timeOutValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
         totalTimeLabel = new javax.swing.JLabel();
         totalTimeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
         totalTimeLabel.setText("Total Time:");
         totalTimeValue = new javax.swing.JLabel();
         totalTimeValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
         totalTimeValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        // --- End dynamic labels ---
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        // --- UI Layout and Styling ---
+        jPanel1.setBackground(COLOR_BG_WHITE);
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        // Use a classic, readable font for receipts
         java.awt.Font billHeaderFont = new java.awt.Font("Courier New", java.awt.Font.BOLD, 22);
         java.awt.Font billSubHeaderFont = new java.awt.Font("Courier New", java.awt.Font.PLAIN, 13);
         java.awt.Font billLabelFont = new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12);
         java.awt.Font billBoldFont = new java.awt.Font("Courier New", java.awt.Font.BOLD, 13);
 
-        // --- Apply new color palette ---
-        jPanel1.setBackground(COLOR_BG_WHITE);
-        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 2));
-        jLabel1.setForeground(COLOR_PRIMARY_YELLOW);
-        jLabel2.setForeground(COLOR_TEXT_DARKGRAY);
-        name.setForeground(COLOR_TEXT_BLACK);
-        carBrandLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        licenseLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        refLabel.setForeground(COLOR_ACCENT_GOLD);
-        timeInLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        timeInValue.setForeground(COLOR_TEXT_BLACK);
-        timeOutLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        timeOutValue.setForeground(COLOR_TEXT_BLACK);
-        totalTimeLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        totalTimeValue.setForeground(COLOR_TEXT_BLACK);
-        jLabel3.setForeground(COLOR_TEXT_DARKGRAY);
-        vat.setForeground(COLOR_TEXT_BLACK);
-        jLabel4.setForeground(COLOR_TEXT_BLACK);
-        total.setForeground(COLOR_TEXT_BLACK);
-        changeLabel.setForeground(COLOR_TEXT_DARKGRAY);
-        changeValueLabel.setForeground(COLOR_TEXT_BLACK);
-        date.setForeground(COLOR_TEXT_DARKGRAY);
-        jPanel3.setBackground(COLOR_BORDER_GRAY);
-
-        // Header
         jLabel1.setFont(billHeaderFont);
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel1.setText("PARKING RECEIPT");
@@ -267,41 +223,24 @@ public class bill extends javax.swing.JFrame {
         jLabel2.setText("Thank you for using our parking service!");
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 50, 400, 20));
 
-        // Divider (move lower, after car details and reference number)
-        // jPanel3.setBackground(new java.awt.Color(0, 0, 0)); // replaced above
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 170, 340, 2));
 
-        // Parking Spot
-        name.setFont(billBoldFont);
-        // name.setText("Parking Slot:"); // REMOVE this line
-        // jPanel1.add(name, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, 320, 20)); // REMOVE this line
-
-        // Car Brand
         carBrandLabel.setFont(billLabelFont);
         carBrandLabel.setText("Car Brand:");
         jPanel1.add(carBrandLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 115, 320, 20));
 
-        // License Plate
         licenseLabel.setFont(billLabelFont);
         licenseLabel.setText("License Plate:");
         jPanel1.add(licenseLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 135, 320, 20));
 
-        // Reference Number (single label, left-aligned)
         jPanel1.add(refLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 320, 20));
-
-        // Time In (label left, value right)
         jPanel1.add(timeInLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 180, 100, 20));
         jPanel1.add(timeInValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 180, 120, 20));
-
-        // Time Out (label left, value right)
         jPanel1.add(timeOutLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 210, 100, 20));
         jPanel1.add(timeOutValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 210, 120, 20));
-
-        // Total Time (label left, value right)
         jPanel1.add(totalTimeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 240, 100, 20));
         jPanel1.add(totalTimeValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 240, 120, 20));
 
-        // VAT (label left, value right)
         jLabel3.setFont(billLabelFont);
         jLabel3.setText("VAT 7%:");
         jPanel1.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 270, 100, 20));
@@ -310,55 +249,58 @@ public class bill extends javax.swing.JFrame {
         vat.setText("P 0.00");
         jPanel1.add(vat, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 270, 120, 20));
 
-        // Total (move down)
         jLabel4.setFont(billBoldFont);
         jLabel4.setText("Total:");
         jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 285, 80, 20));
-
         total.setFont(billBoldFont);
         total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         total.setText("P 0.00");
         jPanel1.add(total, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 285, 120, 20));
 
-        // Change (move down)
         changeLabel.setFont(billLabelFont);
         changeLabel.setText("Change:");
         jPanel1.add(changeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 340, 80, 20));
-
         changeValueLabel.setFont(billLabelFont);
         changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         changeValueLabel.setText("P 0.00");
         jPanel1.add(changeValueLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 340, 120, 20));
 
-        // Date (move down)
         date.setFont(billSubHeaderFont);
         date.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         date.setText("Date:");
         jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 370, 400, 20));
 
+        // Set window size and center
+        int receiptWidth = 400;
+        int receiptHeight = 420;
+        setPreferredSize(new java.awt.Dimension(receiptWidth, receiptHeight));
+        setMinimumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
+        setMaximumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
+        setResizable(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, receiptWidth, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, receiptHeight, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
 
-    /**
-     * @param args the command line arguments
-     */
+        // Center the window
+        java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+        setLocation(
+            (screenSize.width - receiptWidth) / 2,
+            (screenSize.height - receiptHeight) / 2
+        );
+    }
+
+    // Main method to run the bill window
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -375,9 +317,6 @@ public class bill extends javax.swing.JFrame {
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(bill.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new bill().setVisible(true);
@@ -385,7 +324,7 @@ public class bill extends javax.swing.JFrame {
         });
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // --- UI Variables ---
     private javax.swing.JLabel carBrandLabel;
     private javax.swing.JLabel changeLabel;
     private javax.swing.JLabel changeValueLabel;
@@ -402,5 +341,4 @@ public class bill extends javax.swing.JFrame {
     private javax.swing.JLabel price;
     private javax.swing.JLabel total;
     private javax.swing.JLabel vat;
-    // End of variables declaration//GEN-END:variables
 }
