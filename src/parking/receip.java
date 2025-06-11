@@ -9,10 +9,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 
-// This class handles the payment and receipt window
 public class receip extends javax.swing.JFrame {
 
-    // Color palette for UI
     private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
     private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);
     private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);
@@ -24,21 +22,20 @@ public class receip extends javax.swing.JFrame {
     private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);
     private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189);
 
-    // Database connection and payment details
     Connection conn = new dbConnect().dbcon();
-    private int parkingId;
     private String carBrand;
     private String licensePlate;
     private int totalPrice;
     private javax.swing.JFrame parentDashboard;
+    private String referenceId = null;
     private String lastReferenceId = null;
 
     // Constructor for payment window with details
-    public receip(int parkingId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
+    public receip(String referenceId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
         initComponents();
         btn_print.setVisible(false);
         centerFrame();
-        this.parkingId = parkingId;
+        this.referenceId = referenceId;
         this.carBrand = carBrand;
         this.licensePlate = licensePlate;
         this.totalPrice = totalPrice;
@@ -190,6 +187,7 @@ public class receip extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     // Handle Confirm button click for payment
+    // This function processes the payment and saves the transaction
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
         // Validate payment input
         String payText = pay.getText().trim();
@@ -218,37 +216,75 @@ public class receip extends javax.swing.JFrame {
             ResultSet rs;
             try {
                 // Get reference and time info from parking_store
-                String referenceId = null;
-                String timeIn = null;
-                String dateIn = null;
-                String refSql = "SELECT reference_id, time_in, date_in FROM parking_store WHERE id=" + parkingId;
+                String refId = referenceId;
+                String timeIn = "";
+                String dateIn = "";
+                String refSql = "SELECT reference_id, time_in, date_in FROM parking_store WHERE reference_id " +
+                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'"));
                 st = conn.createStatement();
                 rs = st.executeQuery(refSql);
                 if (rs.next()) {
-                    referenceId = rs.getString("reference_id");
+                    refId = rs.getString("reference_id");
                     timeIn = rs.getString("time_in");
                     dateIn = rs.getString("date_in");
                 }
-                lastReferenceId = referenceId;
+                // Fallback: if timeIn or dateIn is empty, try to get from report or use current
+                if (timeIn == null || timeIn.trim().isEmpty()) {
+                    ResultSet rs2 = st.executeQuery("SELECT time_in FROM report WHERE reference_id " +
+                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
+                        " AND time_in IS NOT NULL AND time_in <> '' ORDER BY id DESC LIMIT 1");
+                    if (rs2.next()) {
+                        timeIn = rs2.getString("time_in");
+                    }
+                    if (timeIn == null || timeIn.trim().isEmpty()) {
+                        timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+                    }
+                }
+                if (dateIn == null || dateIn.trim().isEmpty()) {
+                    ResultSet rs2 = st.executeQuery("SELECT date_in FROM report WHERE reference_id " +
+                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
+                        " AND date_in IS NOT NULL AND date_in <> '' ORDER BY id DESC LIMIT 1");
+                    if (rs2.next()) {
+                        dateIn = rs2.getString("date_in");
+                    }
+                    if (dateIn == null || dateIn.trim().isEmpty()) {
+                        dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
+                    }
+                }
+                lastReferenceId = refId;
                 String timeOut = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
-                String sql = "UPDATE totalPrice SET id=" + parkingId + ", price=" + totalPrice;
-                st.executeUpdate(sql);
+
+                // Get next id for report table
+                int nextId = 1;
+                rs = st.executeQuery("SELECT MAX(id) FROM report");
+                if (rs.next()) {
+                    int maxId = rs.getInt(1);
+                    if (!rs.wasNull()) {
+                        nextId = maxId + 1;
+                    }
+                }
 
                 // Insert payment record into report
-                String refIdValue = (referenceId == null || referenceId.trim().isEmpty()) ? "NULL" : referenceId;
-                String timeInValue = (timeIn == null) ? "NULL" : ("'" + timeIn + "'");
-                String timeOutValue = (timeOut == null) ? "NULL" : ("'" + timeOut + "'");
-                String dateInValue = (dateIn == null) ? "NULL" : ("'" + dateIn + "'");
-                sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in) VALUES (" +
-                        parkingId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
+                // Always quote string values, even if empty
+                String refIdValue = (refId == null) ? "NULL" : ("'" + refId + "'");
+                String timeInValue = (timeIn == null) ? "''" : ("'" + timeIn + "'");
+                String timeOutValue = (timeOut == null) ? "''" : ("'" + timeOut + "'");
+                String dateInValue = (dateIn == null) ? "''" : ("'" + dateIn + "'");
+                String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in) VALUES (" +
+                        nextId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
                         refIdValue + ", " +
                         timeInValue + ", " +
                         timeOutValue + ", " +
                         dateInValue + ")";
+                System.out.println("DEBUG: refId=" + refId + ", timeIn=" + timeIn + ", dateIn=" + dateIn + ", timeOut=" + timeOut);
                 st.executeUpdate(sql);
 
-                // Mark parking slot as available again
-                sql = "UPDATE parking_store SET vailable=true, gen='', regis='', reference_id=NULL, time_in='' WHERE id=" + parkingId;
+                // Mark parking slot as available again (clear car details)
+                if (refId != null && !refId.trim().isEmpty()) {
+                    sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id='" + refId + "'";
+                } else {
+                    sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id IS NULL";
+                }
                 st.executeUpdate(sql);
 
                 // Refresh dashboard after payment
@@ -271,6 +307,7 @@ public class receip extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1MouseClicked
 
     // Handle Print Receipt button click
+    // This function prints the receipt after payment
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
         // Show the bill window and print dialog when Print Receipt is clicked
         bill billWindow = new bill(lastReferenceId);
@@ -339,7 +376,6 @@ public class receip extends javax.swing.JFrame {
         });
     }
 
-    // UI variables
     private javax.swing.JButton btn_print;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;

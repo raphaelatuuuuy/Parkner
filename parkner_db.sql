@@ -18,6 +18,30 @@ USE `parking`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `parking_slot`
+--
+
+DROP TABLE IF EXISTS `parking_slot`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `parking_slot` (
+  `slot` int NOT NULL,
+  `status` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`slot`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `parking_slot`
+--
+
+LOCK TABLES `parking_slot` WRITE;
+/*!40000 ALTER TABLE `parking_slot` DISABLE KEYS */;
+INSERT INTO `parking_slot` VALUES (1,1),(2,1),(3,0);
+/*!40000 ALTER TABLE `parking_slot` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `parking_store`
 --
 
@@ -25,8 +49,6 @@ DROP TABLE IF EXISTS `parking_store`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `parking_store` (
-  `id` int NOT NULL,
-  `vailable` tinyint(1) NOT NULL,
   `gen` varchar(50) NOT NULL,
   `regis` varchar(10) NOT NULL,
   `reference_id` int DEFAULT NULL,
@@ -35,22 +57,16 @@ CREATE TABLE `parking_store` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
--- Sample data for parking_store
-LOCK TABLES `parking_store` WRITE;
-INSERT INTO `parking_store` VALUES
-  (1,0,'Toyota','ABC-1234',12345678,'08:15 AM','2025-06-11'),
-  (2,1,'','',NULL,NULL,NULL),
-  (3,0,'Honda','XYZ-5678',87654321,'09:30 AM','2025-06-11'),
-  (4,1,'','',NULL,NULL,NULL),
-  (5,0,'Ford','DEF-4321',23456789,'10:45 AM','2025-06-11');
-UNLOCK TABLES;
-
 --
 -- Dumping data for table `parking_store`
 --
 
 LOCK TABLES `parking_store` WRITE;
 /*!40000 ALTER TABLE `parking_store` DISABLE KEYS */;
+INSERT INTO `parking_store` (`gen`, `regis`, `reference_id`, `time_in`, `date_in`) VALUES
+('Toyota', 'ABC123', 12345678, '08:00 AM', '2025-06-12'),
+('Honda', 'XYZ789', 87654321, '09:30 AM', '2025-06-12'),
+('', '', NULL, '', '');
 /*!40000 ALTER TABLE `parking_store` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -62,7 +78,7 @@ DROP TABLE IF EXISTS `report`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `report` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `gen` varchar(50) NOT NULL,
   `regis` varchar(10) NOT NULL,
   `totalPrice` int NOT NULL,
@@ -70,17 +86,10 @@ CREATE TABLE `report` (
   `reference_id` int DEFAULT NULL,
   `time_in` varchar(50) DEFAULT NULL,
   `time_out` varchar(50) DEFAULT NULL,
-  `date_in` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `date_in` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
--- Sample data for report
-LOCK TABLES `report` WRITE;
-INSERT INTO `report` VALUES
-  (1,'Toyota','ABC-1234',100,0.00,12345678,'08:15 AM','10:15 AM','2025-06-11'),
-  (2,'Honda','XYZ-5678',150,0.00,87654321,'09:30 AM','12:00 PM','2025-06-11'),
-  (3,'Ford','DEF-4321',50,0.00,23456789,'10:45 AM','11:45 AM','2025-06-11');
-UNLOCK TABLES;
 
 --
 -- Dumping data for table `report`
@@ -88,6 +97,9 @@ UNLOCK TABLES;
 
 LOCK TABLES `report` WRITE;
 /*!40000 ALTER TABLE `report` DISABLE KEYS */;
+INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`) VALUES
+(1, 'Toyota', 'ABC123', 100, 0.00, 12345678, '08:00 AM', '10:00 AM', '2025-06-12'),
+(2, 'Honda', 'XYZ789', 50, 0.00, 87654321, '09:30 AM', '10:30 AM', '2025-06-12');
 /*!40000 ALTER TABLE `report` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -110,7 +122,7 @@ CREATE TABLE `totalprice` (
 
 LOCK TABLES `totalprice` WRITE;
 /*!40000 ALTER TABLE `totalprice` DISABLE KEYS */;
-INSERT INTO `totalprice` VALUES (2,50);
+INSERT INTO `totalprice` (`id`, `price`) VALUES (1, 50);
 /*!40000 ALTER TABLE `totalprice` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -123,4 +135,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-11 18:50:40
+-- Dump completed on 2025-06-12  0:21:24

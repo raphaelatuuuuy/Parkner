@@ -301,7 +301,6 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Loads the table with cars currently parked
     public void initTableSales(){
         DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-        // Remove combo box for slot selection
         sales_combo.setVisible(false);
         model.setRowCount(0);
         manage_num_row = 1;
@@ -312,18 +311,23 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         int availableSlotCount = 0;
         try{
+            // Count available slots from parking_slot
+            Statement stSlot = conn.createStatement();
+            ResultSet rsSlot = stSlot.executeQuery("SELECT COUNT(*) FROM parking_slot WHERE status=1");
+            if (rsSlot.next()) {
+                availableSlotCount = rsSlot.getInt(1);
+            }
+
             st = (Statement) conn.createStatement();
             String sql = "SELECT * FROM parking_store";
             rs = st.executeQuery(sql);
             while(rs.next()){
-                int id = rs.getInt("id");
+                // Display only columns from parking_store (no slot/status)
                 String regis = rs.getString("regis");
                 String gen = rs.getString("gen");
                 String timeInStr = rs.getString("time_in");
-                boolean vailable = rs.getBoolean("vailable");
-                // Only display rows where slot is NOT available (i.e., has a car parked)
-                // And only if car details are present (not empty)
-                if (!vailable && gen != null && !gen.trim().isEmpty() && regis != null && !regis.trim().isEmpty()) {
+                // Only display rows where car details are present (not empty)
+                if (gen != null && !gen.trim().isEmpty() && regis != null && !regis.trim().isEmpty()) {
                     String runningTime = "";
                     java.util.Date timeInDate = null;
                     if (timeInStr != null && !timeInStr.trim().isEmpty()) {
@@ -333,7 +337,6 @@ public class Main_dashboard extends javax.swing.JFrame {
                             java.util.Calendar cal = java.util.Calendar.getInstance();
                             java.util.Calendar now = java.util.Calendar.getInstance();
                             cal.setTime(parsedTime);
-                            // Set the date part to today
                             cal.set(now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH), now.get(java.util.Calendar.DAY_OF_MONTH));
                             timeInDate = cal.getTime();
                             long diff = System.currentTimeMillis() - timeInDate.getTime();
@@ -344,22 +347,18 @@ public class Main_dashboard extends javax.swing.JFrame {
                             long hrs = totalMinutes / 60;
                             long mins = totalMinutes % 60;
                             runningTime = String.format("%02d:%02d", hrs, mins);
-                            runningTimeMap.put(id, timeInDate);
+                            // No slot as key, so skip runningTimeMap
                         } catch (Exception e) {
                             runningTime = "";
                         }
                     }
                     model.addRow(new Object[]{
-                        id,
+                        "", // No parking slot column
                         regis,
                         gen,
                         timeInStr,
                         runningTime
                     });
-                    // Do not increment manage_num_row here, as it's not used for table_sales display
-                }
-                if(vailable) {
-                    availableSlotCount++;
                 }
             }
         } catch(SQLException ex){
@@ -378,7 +377,6 @@ public class Main_dashboard extends javax.swing.JFrame {
         // Update available slots label
         availableSlotsLabel.setText("Available Slots: " + availableSlotCount);
 
-        // Only disable the button here, do not show dialog
         if (availableSlotCount == 0) {
             sales_btnAdd.setEnabled(false);
         } else {
@@ -416,15 +414,15 @@ public class Main_dashboard extends javax.swing.JFrame {
         Statement st;
         ResultSet rs;
 
-        String pList = "";
         try{
             st = (Statement) conn.createStatement();
-            String sql = "SELECT id, vailable FROM parking_store";
+            // Use parking_slot table
+            String sql = "SELECT slot, status FROM parking_slot";
             rs = st.executeQuery(sql);
-            int i = 0;
             while(rs.next()){
-                String status = rs.getBoolean("vailable") == true ? "Available" : "Unavailable";
-                model.addRow(new Object[]{rs.getInt("id"), status});
+                // If status is INT, convert to string for display
+                String status = rs.getInt("status") == 1 ? "Available" : "Unavailable";
+                model.addRow(new Object[]{rs.getInt("slot"), status});
                 manage_num_row++;
             }
         } catch(SQLException ex){
@@ -660,11 +658,13 @@ public class Main_dashboard extends javax.swing.JFrame {
         jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 260, 190, 50));
 
         // Move and style the Parking Fee label to the leftmost side
-        jLabel13.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 13));
+        jLabel13.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 12));
         jLabel13.setText("Parking fee 50 pesos/hour");
-        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        // Center the label horizontally
+        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel13.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        jPanel2.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 110, 180, 20));
+        // Centered in the sidebar (x=0, width=210)
+        jPanel2.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 110, 210, 20));
 
         // --- Date and Time label above Parkner logo in sidebar ---
         dateTimeLabel.setFont(new Font("Inter", Font.BOLD, 10));
@@ -821,7 +821,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(table_sales);
 
-        panel_sales.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 650, 630)); // widened from 440 to 650
+        panel_sales.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 650, 630)); // widened
 
         // --- BEGIN FIXED RIGHT PANEL LAYOUT FOR SALES PANEL ---
         // Set right panel width and starting x position
@@ -1190,22 +1190,50 @@ public class Main_dashboard extends javax.swing.JFrame {
         PreparedStatement pt = null;
 
         try{
-            Boolean status = combo.getSelectedItem().toString().equals("Available") ? true : false;
-            String sql = "UPDATE parking_store SET vailable = " + status + " WHERE id=" + manage_selected;    
-            if(status == true){
-                // Also reset time_in when making available
-                sql = "UPDATE parking_store SET vailable = true, gen='', regis='', time_in='' WHERE id=" + manage_selected;   
-            }
+            String status = combo.getSelectedItem().toString();
+            int statusValue = "Available".equals(status) ? 1 : 0;
+            String sql = "UPDATE parking_slot SET status = ? WHERE slot = ?";
             pt = conn.prepareStatement(sql);
+            pt.setInt(1, statusValue);
+            pt.setInt(2, manage_selected);
             pt.execute();
             initTableManage();
-            initTableSales();
-            // Show dialog for edit action
-            JOptionPane.showMessageDialog(this, "Parking slot " + manage_selected + " status updated to '" + combo.getSelectedItem() + "'.", "Edit Parking Slot", JOptionPane.INFORMATION_MESSAGE);
+            initTableSales(); // <-- update available slots in dashboard
+            JOptionPane.showMessageDialog(this, "Parking slot " + manage_selected + " status updated to '" + status + "'.", "Edit Parking Slot", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
     }//GEN-LAST:event_btn_updateMouseClicked
+
+    // Handles Add Slot button click
+    private void btn_addMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_addMouseClicked
+        PreparedStatement pt = null;
+
+        try{
+            // Get the current maximum slot from parking_slot
+            int nextSlot = 1;
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT MAX(slot) FROM parking_slot");
+            if (rs.next()) {
+                int max = rs.getInt(1);
+                if (!rs.wasNull()) {
+                    nextSlot = max + 1;
+                }
+            }
+            // Insert into parking_slot (slot, status)
+            // If status column is INT, use 1 for Available, 0 for Unavailable
+            String sql = "INSERT INTO parking_slot (slot, status) VALUES (?, ?)";
+            pt = conn.prepareStatement(sql);
+            pt.setInt(1, nextSlot);
+            pt.setInt(2, 1); // 1 means Available
+            pt.executeUpdate();
+            initTableManage();
+            initTableSales(); // <-- update available slots in dashboard
+            JOptionPane.showMessageDialog(this, "Parking slot " + nextSlot + " has been added.", "Add Parking Slot", JOptionPane.INFORMATION_MESSAGE);
+        } catch(SQLException ex){
+            System.out.print(ex);
+        }
+    }//GEN-LAST:event_btn_addMouseClicked
 
     // Handles Delete Slot button click for parking slots
     private void btn_deleteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_deleteMouseClicked
@@ -1222,63 +1250,15 @@ public class Main_dashboard extends javax.swing.JFrame {
             return;
         }
         if(manage_selected != 0){
-            Statement st;
-            ResultSet rs;
             PreparedStatement pt = null;
-            
             try{
-                String sql = "DELETE FROM parking_store WHERE id=" + manage_selected;
+                // Delete from parking_slot table
+                String sql = "DELETE FROM parking_slot WHERE slot=" + manage_selected;
                 pt = conn.prepareStatement(sql);
                 pt.execute();
-                // Show dialog for delete action
                 JOptionPane.showMessageDialog(this, "Parking slot " + manage_selected + " has been deleted.", "Delete Parking Slot", JOptionPane.INFORMATION_MESSAGE);
-            } catch(SQLException ex){
-                System.out.print(ex);
-            }
-
-            try{
-                for(int i=manage_selected;i<=manage_num_row;i++){
-                    int id = i+1;
-                    
-                    String sql = "UPDATE parking_store SET id="+i+" WHERE id=" + id;
-                    pt = conn.prepareStatement(sql);
-                    pt.execute();
-                }
-                
-                Boolean vailable_store = true;
-                String gen_store = "", regis_store = "", time_in_store = "";
-                st = (Statement) conn.createStatement();
-                String sql = "SELECT * FROM parking_store WHERE id=" + manage_selected;
-                rs = st.executeQuery(sql);
-                while(rs.next()){
-                    vailable_store = rs.getBoolean("vailable");
-                    gen_store = rs.getString("gen");
-                    regis_store = rs.getString("regis");
-                    time_in_store = rs.getString("time_in");
-                }
-                
-                for(int i=manage_selected;i<=manage_num_row;++i){                    
-                    st = (Statement) conn.createStatement();
-                    sql = "SELECT * FROM parking_store WHERE id=" + (i+1);
-                    rs = st.executeQuery(sql);
-                    
-                    while(rs.next()){
-                        sql = "UPDATE parking_store SET vailable=" + vailable_store + ", gen='" + gen_store + "', regis='" + regis_store + "', time_in='" + time_in_store + "' WHERE id=" + (i+1);
-                        pt = conn.prepareStatement(sql);
-                        pt.execute();
-                        vailable_store = rs.getBoolean("vailable");
-                        gen_store = rs.getString("gen");
-                        regis_store = rs.getString("regis");
-                        time_in_store = rs.getString("time_in");
-                    }
-                    
-                    sql = "UPDATE parking_store SET vailable=true, gen='', regis='', time_in='' WHERE id=" + manage_selected;
-                    pt = conn.prepareStatement(sql);
-                    pt.execute();
-                }
-                
-                initTableSales();
                 initTableManage();
+                initTableSales(); // <-- update available slots in dashboard
                 manage_selected = 0;
             } catch(SQLException ex){
                 System.out.print(ex);
@@ -1299,43 +1279,22 @@ public class Main_dashboard extends javax.swing.JFrame {
         combo.addItem("Available");
         combo.addItem("Unavailable");
 
-        // Always disable first, will enable only if available or empty unavailable
         btn_update.setEnabled(false);
         btn_delete.setEnabled(false);
         combo.setEnabled(false);
 
         try{
             st = (Statement) conn.createStatement();
-            String sql = "SELECT id, vailable, gen, regis FROM parking_store WHERE id=" + selected;
+            // Use parking_slot table
+            String sql = "SELECT slot, status FROM parking_slot WHERE slot=" + selected;
             rs = st.executeQuery(sql);
 
             while(rs.next()){
-                String status = rs.getBoolean("vailable") == true ? "Available" : "Unavailable";
-                String gen = rs.getString("gen");
-                String regis = rs.getString("regis");
+                String status = rs.getInt("status") == 1 ? "Available" : "Unavailable";
                 combo.setSelectedItem(status);
-                if ("Unavailable".equals(status)) {
-                    if ((gen == null || gen.trim().isEmpty()) && (regis == null || regis.trim().isEmpty())) {
-                        // Unavailable but no car/brand/license, allow edit/delete with confirmation
-                        btn_update.setEnabled(true);
-                        btn_delete.setEnabled(true);
-                        combo.setEnabled(true);
-                    } else {
-                        // Unavailable and has car/brand/license, block edit/delete
-                        btn_update.setEnabled(false);
-                        btn_delete.setEnabled(false);
-                        combo.setEnabled(false);
-                        JOptionPane.showMessageDialog(this, 
-                            "A car is parked here. Please accomplish the payment first before editing or deleting the parking slot.",
-                            "Edit/Delete Not Allowed",
-                            JOptionPane.WARNING_MESSAGE);
-                    }
-                } else {
-                    // Enable only if available
-                    btn_update.setEnabled(true);
-                    btn_delete.setEnabled(true);
-                    combo.setEnabled(true);
-                }
+                btn_update.setEnabled(true);
+                btn_delete.setEnabled(true);
+                combo.setEnabled(true);
             }
         } catch(SQLException ex){
             System.out.print(ex);
@@ -1343,30 +1302,6 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         manage_update.setVisible(false);
     }//GEN-LAST:event_table_manageMouseClicked
-
-    // Handles Add Slot button click
-    private void btn_addMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_addMouseClicked
-        PreparedStatement pt = null;
-
-        try{
-            // Get the current maximum id from parking_store
-            int nextId = 1;
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery("SELECT MAX(id) FROM parking_store");
-            if (rs.next()) {
-                nextId = rs.getInt(1) + 1;
-            }
-            String sql = "INSERT INTO parking_store (id, vailable, gen, regis) VALUES ("+ nextId +", true, '', '')";
-            pt = conn.prepareStatement(sql);
-            pt.execute();
-            initTableManage();
-            initTableSales();
-            // Show dialog for add action with correct slot number
-            JOptionPane.showMessageDialog(this, "Parking slot " + nextId + " has been added.", "Add Parking Slot", JOptionPane.INFORMATION_MESSAGE);
-        } catch(SQLException ex){
-            System.out.print(ex);
-        }
-    }//GEN-LAST:event_btn_addMouseClicked
 
     // Handles Add Car button click
     private void sales_btnAddMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btnAddMouseClicked
@@ -1383,22 +1318,8 @@ public class Main_dashboard extends javax.swing.JFrame {
         return;
     }
 
-    // Find the lowest-numbered available slot
-    int selectSlot = -1;
-    try {
-        Statement st = conn.createStatement();
-        ResultSet rs = st.executeQuery("SELECT id FROM parking_store WHERE vailable=true ORDER BY id ASC LIMIT 1");
-        if (rs.next()) {
-            selectSlot = rs.getInt("id");
-        }
-    } catch (SQLException ex) {
-        System.out.print(ex);
-    }
-    if (selectSlot == -1) {
-        JOptionPane.showMessageDialog(this, "No parking slots available. Please add more slots or wait for a slot to be vacated.", "No Parking Slot Available", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
+    // Just add car details to parking_store, do not update parking_slot or include slot/status
+    // (Assume available slot logic is handled elsewhere, e.g., by limiting Add button)
     // Generate unique 8-digit reference number
     String refNumber = "";
     Random rand = new Random();
@@ -1423,7 +1344,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Get current date for Date In
     String dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
 
-    // Add Time In and assigned slot to confirmation dialog
+    // Confirmation dialog (no slot info)
     String confirmMsg = "Please confirm the following details:\n"
             + "Car Brand: " + carBrand + "\n"
             + "License Plate: " + licensePlate + "\n\n"
@@ -1432,23 +1353,18 @@ public class Main_dashboard extends javax.swing.JFrame {
     if (confirm == JOptionPane.YES_OPTION) {
         PreparedStatement pt = null;
         try{
-            // Save date_in as well
-            String sql = "UPDATE parking_store SET gen = '" + carBrand + "', regis = '" + licensePlate + "', vailable=false, reference_id='" + refNumber + "', time_in='" + timeIn + "', date_in='" + dateIn + "' WHERE id=" + selectSlot;
+            String sql = "INSERT INTO parking_store (gen, regis, reference_id, time_in, date_in) VALUES (?, ?, ?, ?, ?)";
             pt = conn.prepareStatement(sql);
-            pt.execute();
-            initTableManage();
-            // Instead of initTableSales(), call the following to ensure only valid rows are shown:
+            pt.setString(1, carBrand);
+            pt.setString(2, licensePlate);
+            pt.setString(3, refNumber);
+            pt.setString(4, timeIn);
+            pt.setString(5, dateIn);
+            pt.executeUpdate();
+
             initTableSales();
-            // Remove any rows that have empty car details (safety)
-            DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-            for (int i = model.getRowCount() - 1; i >= 0; i--) {
-                String regisVal = (String) model.getValueAt(i, 1);
-                String genVal = (String) model.getValueAt(i, 2);
-                if (regisVal == null || regisVal.trim().isEmpty() || genVal == null || genVal.trim().isEmpty()) {
-                    model.removeRow(i);
-                }
-            }
-            JOptionPane.showMessageDialog(this, "Car parked successfully." + ".\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Car parked successfully." + "\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -1456,43 +1372,53 @@ public class Main_dashboard extends javax.swing.JFrame {
 }//GEN-LAST:event_sales_btnAddMouseClicked
 
     // Handles click on a row in the sales table
-    int id;
     String gen, regis;
+    String selectedReferenceId; // Use this instead of id if reference_id is unique
     private void table_salesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_salesMouseClicked
         // Adjusted for new column order (with Running Time column)
-        id = (int) table_sales.getValueAt(table_sales.getSelectedRow(), 0);
-        regis = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 1);
-        gen = (String) table_sales.getValueAt(table_sales.getSelectedRow(), 2);
+        // No parking slot needed, use regis, gen, and time_in to find the car
+        int selectedRow = table_sales.getSelectedRow();
+        if (selectedRow < 0) return;
+
+        String regisVal = (String) table_sales.getValueAt(selectedRow, 1);
+        String genVal = (String) table_sales.getValueAt(selectedRow, 2);
+        String timeInVal = (String) table_sales.getValueAt(selectedRow, 3);
+
+        regis = regisVal;
+        gen = genVal;
+        selectedReferenceId = null;
 
         try {
             Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery("SELECT vailable, time_in FROM parking_store WHERE id=" + id);
-            if (rs.next() && !rs.getBoolean("vailable")) {
+            // Find the reference_id of the car in parking_store
+            ResultSet rs = st.executeQuery("SELECT reference_id, time_in FROM parking_store WHERE regis='" + regisVal + "' AND gen='" + genVal + "' AND time_in='" + timeInVal + "' LIMIT 1");
+            if (rs.next()) {
+                selectedReferenceId = rs.getString("reference_id");
+                String timeInStr = rs.getString("time_in");
+
                 // Additional validation: check if car brand or license plate is empty
                 if (gen == null || gen.trim().isEmpty() || regis == null || regis.trim().isEmpty()) {
-                    sales_id_out.setText("");
+                    // No car selected
                     sales_gen_out.setText("");
                     sales_regis_out.setText("");
                     setReturnCarFieldsEnabled(false);
                     JOptionPane.showMessageDialog(this, "Please select occupied car.", "No Car Selected", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                sales_id_out.setText(id + "");
+                // No parking slot output
+                sales_id_out.setText(""); // not used
                 sales_gen_out.setText(gen);
                 sales_regis_out.setText(regis);
 
                 // --- Compute running time and hours for payment ---
-                String timeInStr = rs.getString("time_in");
                 int hoursToPay = 1;
                 if (timeInStr != null && !timeInStr.trim().isEmpty()) {
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
                         java.util.Date parsedTime = sdf.parse(timeInStr);
                         java.util.Calendar cal = java.util.Calendar.getInstance();
-
                         java.util.Calendar now = java.util.Calendar.getInstance();
                         cal.setTime(parsedTime);
-                        // Set the date part to today
                         cal.set(now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH), now.get(java.util.Calendar.DAY_OF_MONTH));
                         long diffMillis = System.currentTimeMillis() - cal.getTimeInMillis();
                         if (diffMillis < 0) {
@@ -1525,13 +1451,11 @@ public class Main_dashboard extends javax.swing.JFrame {
                 // Enable return car fields
                 setReturnCarFieldsEnabled(true);
             } else {
-                sales_id_out.setText("");
                 sales_gen_out.setText("");
                 sales_regis_out.setText("");
                 sales_hours.setText("");
                 sales_btn_pay.setText("Pay");
                 setReturnCarFieldsEnabled(false);
-                // Show dialog when user clicks on an available slot
                 JOptionPane.showMessageDialog(this, "Please select occupied car.", "No Car Selected", JOptionPane.WARNING_MESSAGE);
             }
         } catch (SQLException ex) {
@@ -1541,7 +1465,8 @@ public class Main_dashboard extends javax.swing.JFrame {
 
     // Enables or disables the Pay & Exit fields
     private void setReturnCarFieldsEnabled(boolean enabled) {
-        sales_id_out.setEnabled(false); // always disabled (output only)
+        // Remove parking slot field logic
+        sales_id_out.setEnabled(false); // always disabled (output only, not used)
         sales_gen_out.setEnabled(false); // always disabled (output only)
         sales_regis_out.setEnabled(false); // always disabled (output only)
         sales_hours.setEnabled(false); // always disabled, just for display
@@ -1561,7 +1486,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Handles Pay button click
     private void sales_btn_payMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btn_payMouseClicked
         // Prevent pay if no car is selected
-        if (sales_id_out.getText().trim().isEmpty()) {
+        if (gen == null || regis == null || gen.trim().isEmpty() || regis.trim().isEmpty() || selectedReferenceId == null) {
             JOptionPane.showMessageDialog(this, "Please select an occupied car first.", "No Car Selected", JOptionPane.WARNING_MESSAGE);
             sales_hours.setText("");
             sales_hours.setEnabled(false);
@@ -1574,26 +1499,23 @@ public class Main_dashboard extends javax.swing.JFrame {
         int totalPrice = hours * 50;
 
         // Only open the receipt window, do not execute SQL here
-        receip receiptWindow = new receip(id, gen, regis, totalPrice, this);
+        receip receiptWindow = new receip(selectedReferenceId, gen, regis, totalPrice, this);
         receiptWindow.setVisible(true);
 
-        // --- Clear time_in, running time, and reference_id after payment ---
+        // --- Clear car details after payment ---
         try {
-            // This will clear time_in, running time (by removing time_in), and reference_id
-            String sql = "UPDATE parking_store SET vailable=true, gen='', regis='', time_in='', reference_id='' WHERE id=" + id;
+            // Clear car details in parking_store for this reference_id
+            String sql = "UPDATE parking_store SET gen='', regis='', time_in='', reference_id=NULL, date_in='' WHERE reference_id='" + selectedReferenceId + "'";
             PreparedStatement pt = conn.prepareStatement(sql);
             pt.execute();
-            // Remove running time entry for this id
-            runningTimeMap.remove(id);
 
-            // --- Remove all rows from the dashboard table (table_sales) ---
+            // Remove all rows from the dashboard table (table_sales)
             DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
             model.setRowCount(0);
 
             initTableManage();
             // Do NOT call initTableSales() here, as it would reload all rows
             // Optionally clear the output fields
-            sales_id_out.setText("");
             sales_gen_out.setText("");
             sales_regis_out.setText("");
             sales_hours.setText("");

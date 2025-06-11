@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package parking;
 
 import java.sql.Connection;
@@ -14,10 +9,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-// Bill window for printing parking receipt
 public class bill extends javax.swing.JFrame {
 
-    // --- Color Palette for UI ---
     private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
     private static final java.awt.Color COLOR_ACCENT_GOLD = new java.awt.Color(212, 163, 0);
     private static final java.awt.Color COLOR_BG_WHITE = new java.awt.Color(250, 250, 250);
@@ -29,10 +22,8 @@ public class bill extends javax.swing.JFrame {
     private static final java.awt.Color COLOR_ERROR_RED = new java.awt.Color(211, 47, 47);
     private static final java.awt.Color COLOR_BORDER_GRAY = new java.awt.Color(189, 189, 189);
 
-    // Database connection
     Connection conn = new dbConnect().dbcon();
 
-    // Labels for dynamic receipt info
     private javax.swing.JLabel refLabel;
     private javax.swing.JLabel timeInLabel;
     private javax.swing.JLabel timeInValue;
@@ -44,19 +35,21 @@ public class bill extends javax.swing.JFrame {
     // Show receipt for given referenceId
     public bill(String referenceId) {
         initComponents();
-
-        // Get transaction info from database
         Statement st;
         ResultSet rs;
         try {
             st = conn.createStatement();
-            String sql = "SELECT id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out FROM report WHERE reference_id " +
+            String sql = "SELECT gen, regis, totalPrice, `change`, reference_id, time_in, time_out " +
+                         "FROM report WHERE reference_id " +
                          (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
-                         " ORDER BY id DESC LIMIT 1";
+                         " AND time_in IS NOT NULL AND time_in <> '' " +
+                         "AND time_out IS NOT NULL AND time_out <> '' " +
+                         "ORDER BY id DESC LIMIT 1";
             rs = st.executeQuery(sql);
 
+            boolean found = false;
             if (rs.next()) {
-                int spotId = rs.getInt("id");
+                found = true;
                 String carBrand = rs.getString("gen");
                 String licensePlate = rs.getString("regis");
                 double priceValue = rs.getDouble("totalPrice");
@@ -67,7 +60,6 @@ public class bill extends javax.swing.JFrame {
                 String timeIn = rs.getString("time_in");
                 String timeOut = rs.getString("time_out");
 
-                // Set receipt info
                 name.setText("");
                 carBrandLabel.setText("Car Brand: " + carBrand);
                 licenseLabel.setText("License Plate: " + licensePlate);
@@ -77,9 +69,8 @@ public class bill extends javax.swing.JFrame {
                 timeOutLabel.setText("Time Out:");
                 timeOutValue.setText(timeOut == null ? "N/A" : timeOut);
 
-                // Calculate total time parked
                 String totalTimeStr = "N/A";
-                if (timeIn != null && timeOut != null) {
+                if (timeIn != null && !timeIn.trim().isEmpty() && timeOut != null && !timeOut.trim().isEmpty()) {
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
                         java.util.Date tIn = sdf.parse(timeIn);
@@ -97,7 +88,6 @@ public class bill extends javax.swing.JFrame {
                 totalTimeLabel.setText("Total Time:");
                 totalTimeValue.setText(totalTimeStr);
 
-                // Set price, vat, total, paid, change
                 price.setText(String.format("P %8.2f", priceValue));
                 price.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                 vat.setText(String.format("P %8.2f", vatValue));
@@ -113,7 +103,6 @@ public class bill extends javax.swing.JFrame {
                 changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
                 changeValueLabel.setBounds(250, 260 + 20, 120, 20);
 
-                // Show change below paid
                 javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
                 changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
                 changeLabel2.setText("Change:");
@@ -127,27 +116,87 @@ public class bill extends javax.swing.JFrame {
                 changeValueLabel2.setName("dyn_changevalue2");
                 jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
 
-                // Show date
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
                 LocalDateTime now = LocalDateTime.now();
                 date.setText("Date: " + dtf.format(now));
-            } else {
-                // If no record found, show empty
-                name.setText("");
-                carBrandLabel.setText("");
-                licenseLabel.setText("");
-                price.setText("");
-                vat.setText("");
-                total.setText("");
-                changeValueLabel.setText("");
-                date.setText("");
-                refLabel.setText("Reference Number: N/A");
-                timeInLabel.setText("Time In:");
-                timeInValue.setText("N/A");
-                timeOutLabel.setText("Time Out:");
-                timeOutValue.setText("N/A");
-                totalTimeLabel.setText("Total Time:");
-                totalTimeValue.setText("N/A");
+            }
+
+            if (!found) {
+                sql = "SELECT gen, regis, totalPrice, `change`, reference_id, time_in, time_out " +
+                      "FROM report WHERE reference_id " +
+                      (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
+                      " ORDER BY id DESC LIMIT 1";
+                rs = st.executeQuery(sql);
+                if (rs.next()) {
+                    String carBrand = rs.getString("gen");
+                    String licensePlate = rs.getString("regis");
+                    double priceValue = rs.getDouble("totalPrice");
+                    double vatValue = priceValue * 7 / 100;
+                    double totalValue = priceValue;
+                    double changeValue = rs.getDouble("change");
+                    String refNum = rs.getString("reference_id");
+                    String timeIn = rs.getString("time_in");
+                    String timeOut = rs.getString("time_out");
+
+                    name.setText("");
+                    carBrandLabel.setText("Car Brand: " + carBrand);
+                    licenseLabel.setText("License Plate: " + licensePlate);
+                    refLabel.setText("Reference Number: " + (refNum == null ? "N/A" : refNum));
+                    timeInLabel.setText("Time In:");
+                    timeInValue.setText(timeIn == null || timeIn.trim().isEmpty() ? "N/A" : timeIn);
+                    timeOutLabel.setText("Time Out:");
+                    timeOutValue.setText(timeOut == null || timeOut.trim().isEmpty() ? "N/A" : timeOut);
+                    totalTimeLabel.setText("Total Time:");
+                    totalTimeValue.setText("N/A");
+
+                    price.setText(String.format("P %8.2f", priceValue));
+                    price.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    vat.setText(String.format("P %8.2f", vatValue));
+                    vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    total.setText(String.format("P %8.2f", totalValue));
+                    total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeLabel.setText("Paid:");
+                    changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    changeLabel.setBounds(40, 260 + 20, 120, 20);
+                    changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
+                    changeValueLabel.setBounds(250, 260 + 20, 120, 20);
+
+                    javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
+                    changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeLabel2.setText("Change:");
+                    changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    changeLabel2.setName("dyn_changelabel2");
+                    jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260 + 45, 120, 20));
+                    javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
+                    changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeValueLabel2.setText(String.format("P %8.2f", changeValue));
+                    changeValueLabel2.setName("dyn_changevalue2");
+                    jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
+
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
+                    LocalDateTime now = LocalDateTime.now();
+                    date.setText("Date: " + dtf.format(now));
+                } else {
+                    name.setText("");
+                    carBrandLabel.setText("");
+                    licenseLabel.setText("");
+                    price.setText("");
+                    vat.setText("");
+                    total.setText("");
+                    changeValueLabel.setText("");
+                    date.setText("");
+                    refLabel.setText("Reference Number: N/A");
+                    timeInLabel.setText("Time In:");
+                    timeInValue.setText("N/A");
+                    timeOutLabel.setText("Time Out:");
+                    timeOutValue.setText("N/A");
+                    totalTimeLabel.setText("Total Time:");
+                    totalTimeValue.setText("N/A");
+                }
             }
         } catch(SQLException ex){
             System.out.print(ex);
@@ -324,7 +373,6 @@ public class bill extends javax.swing.JFrame {
         });
     }
 
-    // --- UI Variables ---
     private javax.swing.JLabel carBrandLabel;
     private javax.swing.JLabel changeLabel;
     private javax.swing.JLabel changeValueLabel;
