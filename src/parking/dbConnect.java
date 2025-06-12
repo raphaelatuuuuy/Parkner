@@ -3,7 +3,7 @@ import java.sql.*;
 
 public class dbConnect {
     private static String username = "root";
-    private static String password = "1234";
+    private static String password = "root";
     private static String con = "jdbc:mysql://localhost:3307/parking";
     
     public static Connection dbcon(){
@@ -18,5 +18,3 @@ public class dbConnect {
         return conn;
     }
 }
-
-// TITE
