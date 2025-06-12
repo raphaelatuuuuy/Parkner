@@ -87,6 +87,7 @@ CREATE TABLE `report` (
   `time_in` varchar(50) DEFAULT NULL,
   `time_out` varchar(50) DEFAULT NULL,
   `date_in` text,
+  `qr_info` text,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;

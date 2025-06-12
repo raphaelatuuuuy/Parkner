@@ -8,6 +8,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.awt.image.BufferedImage;
+import javax.swing.ImageIcon;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.common.BitMatrix;
 
 public class receip extends javax.swing.JFrame {
 
@@ -29,11 +35,15 @@ public class receip extends javax.swing.JFrame {
     private javax.swing.JFrame parentDashboard;
     private String referenceId = null;
     private String lastReferenceId = null;
+    private javax.swing.JButton btn_qrpay; // Add QR Pay button
+    private boolean qrPaid = false; // Track if QR payment was made
+    private String qrPaymentInfo = null; // Store QR payment info
 
     // Constructor for payment window with details
     public receip(String referenceId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
         initComponents();
         btn_print.setVisible(false);
+        btn_qrpay.setVisible(true); // Show QR Pay button
         centerFrame();
         this.referenceId = referenceId;
         this.carBrand = carBrand;
@@ -47,6 +57,7 @@ public class receip extends javax.swing.JFrame {
     public receip() {
         initComponents();
         btn_print.setVisible(false);
+        btn_qrpay.setVisible(true);
         centerFrame();
         Statement st;
         ResultSet rs;
@@ -86,6 +97,7 @@ public class receip extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         price = new javax.swing.JLabel();
+        btn_qrpay = new javax.swing.JButton(); // QR Pay button
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(400, 400));
@@ -172,6 +184,20 @@ public class receip extends javax.swing.JFrame {
         btn_print.setForeground(COLOR_TEXT_BLACK);
         receip_show.setForeground(COLOR_SUCCESS_GREEN);
 
+        // Add QR Pay button
+        btn_qrpay.setFont(new java.awt.Font("Inter", 0, 18));
+        btn_qrpay.setText("Pay via QR");
+        btn_qrpay.setBackground(COLOR_SUCCESS_GREEN);
+        btn_qrpay.setForeground(COLOR_BG_WHITE);
+        btn_qrpay.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btn_qrpay.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                btn_qrpayMouseClicked(evt);
+            }
+        });
+        // Place QR Pay button above Confirm
+        jPanel1.add(btn_qrpay, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 200, 110, 35));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -184,11 +210,17 @@ public class receip extends javax.swing.JFrame {
         );
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>                        
 
     // Handle Confirm button click for payment
     // This function processes the payment and saves the transaction
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
+        // If QR payment is required, only allow if paid
+        if (btn_qrpay.isVisible() && !qrPaid) {
+            receip_show.setText("Please pay via QR or enter cash.");
+            btn_print.setVisible(false);
+            return;
+        }
         // Validate payment input
         String payText = pay.getText().trim();
         double paidAmount = 0;
@@ -200,9 +232,11 @@ public class receip extends javax.swing.JFrame {
                 return;
             }
         } catch (NumberFormatException e) {
-            receip_show.setText("Invalid Amount");
-            btn_print.setVisible(false);
-            return;
+            if (!qrPaid) { // Only error if not paid via QR
+                receip_show.setText("Invalid Amount");
+                btn_print.setVisible(false);
+                return;
+            }
         }
 
         double change = paidAmount - totalPrice;
@@ -270,12 +304,15 @@ public class receip extends javax.swing.JFrame {
                 String timeInValue = (timeIn == null) ? "''" : ("'" + timeIn + "'");
                 String timeOutValue = (timeOut == null) ? "''" : ("'" + timeOut + "'");
                 String dateInValue = (dateIn == null) ? "''" : ("'" + dateIn + "'");
-                String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in) VALUES (" +
+                // Add qrPaymentInfo as 'qr_info' column (add this column to your report table)
+                String qrInfoValue = (qrPaymentInfo == null) ? "NULL" : ("'" + qrPaymentInfo.replace("'", "''") + "'");
+                String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in, qr_info) VALUES (" +
                         nextId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
                         refIdValue + ", " +
                         timeInValue + ", " +
                         timeOutValue + ", " +
-                        dateInValue + ")";
+                        dateInValue + ", " +
+                        qrInfoValue + ")";
                 System.out.println("DEBUG: refId=" + refId + ", timeIn=" + timeIn + ", dateIn=" + dateIn + ", timeOut=" + timeOut);
                 st.executeUpdate(sql);
 
@@ -310,7 +347,7 @@ public class receip extends javax.swing.JFrame {
     // This function prints the receipt after payment
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
         // Show the bill window and print dialog when Print Receipt is clicked
-        bill billWindow = new bill(lastReferenceId);
+        bill billWindow = new bill(lastReferenceId, qrPaymentInfo); // Pass QR info
         billWindow.pack();
         billWindow.setLocationRelativeTo(null);
 
@@ -342,6 +379,68 @@ public class receip extends javax.swing.JFrame {
         // Optionally close the payment window after printing
         dispose();
     }//GEN-LAST:event_btn_printMouseClicked
+
+    // --- QR Pay Button Handler ---
+    private void btn_qrpayMouseClicked(java.awt.event.MouseEvent evt) {
+        // Generate QR code content (e.g., payment info)
+        String qrContent = "PARKNER PAY\nReference: " + (referenceId != null ? referenceId : "N/A")
+                + "\nCar: " + (carBrand != null ? carBrand : "")
+                + "\nPlate: " + (licensePlate != null ? licensePlate : "")
+                + "\nAmount: " + totalPrice + " pesos";
+        qrPaymentInfo = qrContent; // Save for receipt
+
+        // Generate QR code image using ZXing
+        BufferedImage qrImage = null;
+        try {
+            QRCodeWriter qrWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrWriter.encode(qrContent, BarcodeFormat.QR_CODE, 200, 200);
+            qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+            for (int x = 0; x < 200; x++) {
+                for (int y = 0; y < 200; y++) {
+                    qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                }
+            }
+        } catch (WriterException e) {
+            // fallback: no QR
+        }
+
+        javax.swing.JDialog qrDialog = new javax.swing.JDialog(this, "Scan QR to Pay", true);
+        qrDialog.setSize(320, 400);
+        qrDialog.setResizable(false);
+        qrDialog.setLayout(null);
+
+        javax.swing.JLabel qrLabel = new javax.swing.JLabel();
+        qrLabel.setBounds(60, 30, 200, 200);
+        if (qrImage != null) {
+            qrLabel.setIcon(new ImageIcon(qrImage));
+        } else {
+            qrLabel.setText("QR Code Error");
+            qrLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            qrLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+        }
+        qrDialog.add(qrLabel);
+
+        javax.swing.JLabel info = new javax.swing.JLabel("<html><center>Scan this QR code with your banking app to pay.<br>Amount: " + totalPrice + " pesos</center></html>");
+        info.setBounds(20, 240, 280, 40);
+        info.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        qrDialog.add(info);
+
+        javax.swing.JButton btnSimulate = new javax.swing.JButton("Simulate Payment");
+        btnSimulate.setBounds(90, 300, 140, 35);
+        btnSimulate.setBackground(COLOR_SUCCESS_GREEN);
+        btnSimulate.setForeground(COLOR_BG_WHITE);
+        btnSimulate.addActionListener(e -> {
+            qrPaid = true;
+            pay.setText(String.valueOf(totalPrice)); // Auto-fill amount
+            receip_show.setText("QR Payment Received");
+            btn_print.setVisible(true);
+            qrDialog.dispose();
+        });
+        qrDialog.add(btnSimulate);
+
+        qrDialog.setLocationRelativeTo(this);
+        qrDialog.setVisible(true);
+    }
 
     // Main method for testing
     public static void main(String args[]) {

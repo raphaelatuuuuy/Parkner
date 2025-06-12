@@ -1,5 +1,6 @@
 package parking;
 
+import java.awt.image.BufferedImage;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,6 +9,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.common.BitMatrix;
+
+import javax.swing.ImageIcon;
 
 public class bill extends javax.swing.JFrame {
 
@@ -32,8 +40,11 @@ public class bill extends javax.swing.JFrame {
     private javax.swing.JLabel totalTimeLabel;
     private javax.swing.JLabel totalTimeValue;
 
-    // Show receipt for given referenceId
-    public bill(String referenceId) {
+    private String qrPaymentInfo = null;
+
+    // Show receipt for given referenceId and QR info
+    public bill(String referenceId, String qrPaymentInfo) {
+        this.qrPaymentInfo = qrPaymentInfo;
         initComponents();
         Statement st;
         ResultSet rs;
@@ -198,6 +209,36 @@ public class bill extends javax.swing.JFrame {
                     totalTimeValue.setText("N/A");
                 }
             }
+
+            // After setting up all labels, show QR info if present
+            if (qrPaymentInfo != null && !qrPaymentInfo.trim().isEmpty()) {
+                // Generate QR code image
+                BufferedImage qrImage = null;
+                try {
+                    QRCodeWriter qrWriter = new QRCodeWriter();
+                    BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 100, 100);
+                    qrImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+                    for (int x = 0; x < 100; x++) {
+                        for (int y = 0; y < 100; y++) {
+                            qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                        }
+                    }
+                } catch (WriterException e) {}
+                javax.swing.JLabel qrReceiptLabel = new javax.swing.JLabel();
+                qrReceiptLabel.setBounds(150, 390, 100, 100);
+                if (qrImage != null) {
+                    qrReceiptLabel.setIcon(new ImageIcon(qrImage));
+                } else {
+                    qrReceiptLabel.setText("QR Error");
+                }
+                qrReceiptLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                qrReceiptLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+                jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 390, 100, 100));
+                javax.swing.JLabel qrText = new javax.swing.JLabel("QR Payment Info");
+                qrText.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 10));
+                qrText.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 490, 100, 20));
+            }
         } catch(SQLException ex){
             System.out.print(ex);
         }
@@ -205,7 +246,7 @@ public class bill extends javax.swing.JFrame {
 
     // Default constructor
     public bill() {
-        this(null);
+        this(null, null);
     }
 
     // Build the receipt UI
