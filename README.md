@@ -138,6 +138,7 @@ The system uses a carefully selected color palette for clarity, accessibility, a
    - MySQL Server
    - [mysql-connector-java-8.0.23](https://dev.mysql.com/downloads/connector/j/)
    - Font: Inter (install manually from `src/assets/font` if desired)
+   - [ZXING Library](https://repo1.maven.org/maven2/com/google/zxing/core/3.5.3/) (core-3.5.3.jar and core-3.5.3-javadoc.jar)
 
 2. **Database Setup:**
 
