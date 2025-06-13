@@ -30,8 +30,8 @@ CREATE TABLE `parking_slot` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Only one row should exist:
--- Set occupied to 3, matching the 3 initial records in parking_store
-INSERT INTO `parking_slot` (`id`, `total_slots`, `maintenance_reserved`, `occupied`) VALUES (1, 50, 0, 3);
+-- Set occupied to 0, since there are no initial records in parking_store
+INSERT INTO `parking_slot` (`id`, `total_slots`, `maintenance_reserved`, `occupied`) VALUES (1, 0, 0, 0);
 
 --
 -- Table structure for table `parking_store`
@@ -55,10 +55,6 @@ CREATE TABLE `parking_store` (
 
 LOCK TABLES `parking_store` WRITE;
 /*!40000 ALTER TABLE `parking_store` DISABLE KEYS */;
-INSERT INTO `parking_store` (`gen`, `regis`, `reference_id`, `time_in`, `date_in`) VALUES
-('Toyota', 'ABC123', 10000001, '08:00 AM', '2025-06-13'),
-('Honda', 'XYZ789', 10000002, '09:30 AM', '2025-06-13'),
-('Nissan', 'DEF456', 10000003, '10:15 AM', '2025-06-13');
 /*!40000 ALTER TABLE `parking_store` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -91,9 +87,6 @@ CREATE TABLE `report` (
 
 LOCK TABLES `report` WRITE;
 /*!40000 ALTER TABLE `report` DISABLE KEYS */;
-INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`, `qr_info`, `payment_method`) VALUES
-(1, 'Toyota', 'ABC123', 100, 0.00, 10000001, '08:00 AM', '10:00 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000001\nCar: Toyota\nPlate: ABC123\nAmount: 100 pesos', 'Cash'),
-(2, 'Honda', 'XYZ789', 50, 0.00, 10000002, '09:30 AM', '10:30 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000002\nCar: Honda\nPlate: XYZ789\nAmount: 50 pesos', 'Digital');
 /*!40000 ALTER TABLE `report` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -123,6 +116,13 @@ UNLOCK TABLES;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-06-13 17:31:48
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
