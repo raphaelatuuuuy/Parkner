@@ -15,6 +15,7 @@ import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.common.BitMatrix;
 
+// Payment window for handling cash and QR payments
 public class receip extends javax.swing.JFrame {
 
     private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
@@ -35,12 +36,13 @@ public class receip extends javax.swing.JFrame {
     private javax.swing.JFrame parentDashboard;
     private String referenceId = null;
     private String lastReferenceId = null;
-    private javax.swing.JButton btn_qrpay; // Add QR Pay button
+    private javax.swing.JButton btn_qrpay; // QR Pay button
     private boolean qrPaid = false; // Track if QR payment was made
     private String qrPaymentInfo = null; // Store QR payment info
 
     // Store the last generated QR image for receipt printing
     private BufferedImage lastQrImage = null;
+    private String lastPaymentMethod = "Cash"; // Track payment method
 
     // Constructor for payment window with details
     public receip(String referenceId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
@@ -77,7 +79,7 @@ public class receip extends javax.swing.JFrame {
     }
 
     // Center the payment window on screen
-    public void centerFrame() {
+    private void centerFrame() {
         Dimension windowSize = getSize();
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         Point centerPoint = ge.getCenterPoint();
@@ -271,6 +273,7 @@ public class receip extends javax.swing.JFrame {
         }
         // --- end ensure QR image ---
 
+        lastPaymentMethod = "Cash";
         processPayment(change, true); // true = show confirm dialog
     }//GEN-LAST:event_jButton1MouseClicked
 
@@ -304,6 +307,7 @@ public class receip extends javax.swing.JFrame {
         } catch (WriterException e) {}
 
         lastQrImage = qrImage; // Save for printing
+        lastPaymentMethod = "Digital";
 
         javax.swing.JDialog qrDialog = new javax.swing.JDialog(this, "Scan QR to Pay", true);
         qrDialog.setSize(350, 500); // More height for QR
@@ -352,6 +356,7 @@ public class receip extends javax.swing.JFrame {
             receip_show.setText("QR Payment Received");
             btn_print.setVisible(true);
             qrDialog.dispose();
+            lastPaymentMethod = "Digital";
             // Process payment immediately, no confirm dialog
             processPayment(0.0, false); // false = no confirm dialog
         });
@@ -439,13 +444,15 @@ public class receip extends javax.swing.JFrame {
             String timeOutValue = (timeOut == null) ? "''" : ("'" + timeOut + "'");
             String dateInValue = (dateIn == null) ? "''" : ("'" + dateIn + "'");
             String qrInfoValue = (qrPaymentInfo == null) ? "NULL" : ("'" + qrPaymentInfo.replace("'", "''") + "'");
-            String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in, qr_info) VALUES (" +
+            String paymentMethodValue = (lastPaymentMethod == null) ? "'Cash'" : ("'" + lastPaymentMethod + "'");
+            String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in, qr_info, payment_method) VALUES (" +
                     nextId + ", '" + carBrandDb + "', '" + licensePlateDb + "', " + totalPrice + ", " + change + ", " +
                     refIdValue + ", " +
                     timeInValue + ", " +
                     timeOutValue + ", " +
                     dateInValue + ", " +
-                    qrInfoValue + ")";
+                    qrInfoValue + ", " +
+                    paymentMethodValue + ")";
             st.executeUpdate(sql);
 
             // Mark parking slot as available again (clear car details)
@@ -476,8 +483,8 @@ public class receip extends javax.swing.JFrame {
     // Handle Print Receipt button click
     // This function prints the receipt after payment
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
-        // Always pass the lastQrImage to the bill window
-        bill billWindow = new bill(lastReferenceId, qrPaymentInfo, lastQrImage); // Pass QR info and QR image
+        // Always pass the lastQrImage and payment method to the bill window
+        bill billWindow = new bill(lastReferenceId, qrPaymentInfo, lastQrImage, lastPaymentMethod); // Pass payment method
         billWindow.pack();
         billWindow.setLocationRelativeTo(null);
 

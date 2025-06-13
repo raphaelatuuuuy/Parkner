@@ -37,7 +37,7 @@ CREATE TABLE `parking_slot` (
 
 LOCK TABLES `parking_slot` WRITE;
 /*!40000 ALTER TABLE `parking_slot` DISABLE KEYS */;
-INSERT INTO `parking_slot` VALUES (1,1),(2,1),(3,1),(4,1),(5,1);
+INSERT INTO `parking_slot` VALUES (1,0),(2,1),(3,0),(4,0),(5,1);
 /*!40000 ALTER TABLE `parking_slot` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -63,6 +63,10 @@ CREATE TABLE `parking_store` (
 
 LOCK TABLES `parking_store` WRITE;
 /*!40000 ALTER TABLE `parking_store` DISABLE KEYS */;
+INSERT INTO `parking_store` (`gen`, `regis`, `reference_id`, `time_in`, `date_in`) VALUES
+('Toyota', 'ABC123', 10000001, '08:00 AM', '2025-06-13'),
+('Honda', 'XYZ789', 10000002, '09:30 AM', '2025-06-13'),
+('Nissan', 'DEF456', 10000003, '10:15 AM', '2025-06-13');
 /*!40000 ALTER TABLE `parking_store` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -84,6 +88,7 @@ CREATE TABLE `report` (
   `time_out` varchar(50) DEFAULT NULL,
   `date_in` text,
   `qr_info` text,
+  `payment_method` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -94,9 +99,9 @@ CREATE TABLE `report` (
 
 LOCK TABLES `report` WRITE;
 /*!40000 ALTER TABLE `report` DISABLE KEYS */;
-INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`, `qr_info`) VALUES
-(1, 'Toyota', 'ABC123', 100, 0.00, 10000001, '08:00 AM', '10:00 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000001\nCar: Toyota\nPlate: ABC123\nAmount: 100 pesos'),
-(2, 'Honda', 'XYZ789', 50, 0.00, 10000002, '09:30 AM', '10:30 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000002\nCar: Honda\nPlate: XYZ789\nAmount: 50 pesos');
+INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`, `qr_info`, `payment_method`) VALUES
+(1, 'Toyota', 'ABC123', 100, 0.00, 10000001, '08:00 AM', '10:00 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000001\nCar: Toyota\nPlate: ABC123\nAmount: 100 pesos', 'Cash'),
+(2, 'Honda', 'XYZ789', 50, 0.00, 10000002, '09:30 AM', '10:30 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000002\nCar: Honda\nPlate: XYZ789\nAmount: 50 pesos', 'Digital');
 /*!40000 ALTER TABLE `report` ENABLE KEYS */;
 UNLOCK TABLES;
 

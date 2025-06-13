@@ -1,90 +1,92 @@
 # <div align="center">Parkner Parking Management System</div>
 
 <div align="center">
-  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220" height/>
+  <img src="src/asset/icons/parkner-logo.png" alt="Parkner Logo" width="220"/>
 </div>
 
 ## About
 
-**Parkner** is a digital parking management system designed to assist parking attendants in efficiently managing vehicle entries, exits, and parking operations. Traditional manual methods often lead to inefficiencies such as miscalculated tickets, lost records, and human error—resulting in customer dissatisfaction and operational challenges. Parkner addresses these issues by providing a user-friendly application that enables real-time slot monitoring, digital record-keeping, and automated fee computation. The system aims to enhance accuracy, security, and efficiency in parking operations, reducing manual workload and minimizing errors for both staff and customers.
+**Parkner** is a digital parking management system for attendants to efficiently manage vehicle entries, exits, and parking operations. It replaces manual methods with real-time slot monitoring, digital record-keeping, and automated fee computation, improving accuracy, security, and efficiency for both staff and customers.
 
 ## Purpose
 
-This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under Prof. Renz Angelo De Vera Cadaoas.
+This project was developed for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under Prof. Renz Angelo De Vera Cadaoas.
 
-**Additional purposes and goals:**
+**Goals:**
 
-- Provide hands-on experience in designing and implementing a real-world object-oriented application.
-- Demonstrate Java OOP concepts, GUI development, and database integration.
-- Offer a practical solution for parking lot management, improving efficiency and reducing manual errors.
-- Serve as a learning platform for teamwork, version control, and software engineering best practices.
-- Create a user-friendly system that can be easily adapted for academic or small business use.
+- Demonstrate Java OOP, GUI, and database integration.
+- Provide a practical parking lot management solution.
+- Serve as a platform for teamwork and software engineering best practices.
+- User-friendly and adaptable for academic or small business use.
 
 ## Features
 
-- **Parking Slot Management:**
+- **Parking Slot Management**
 
-  - Add, update, or remove parking slots (CRUD operations).
-  - View all parking slots and their statuses (Available/Unavailable).
-  - Change the status of parking slots (e.g., mark as available/unavailable).
-  - Only allow deletion of slots that are not occupied.
+  - Add, update, or remove parking slots.
+  - View all slots and their statuses (Available/Unavailable).
+  - Change slot status.
+  - Only allow deletion of unoccupied slots.
 
-- **Vehicle Entry & Exit:**
+- **Vehicle Entry & Exit**
 
   - Park a car by entering car brand and license plate.
   - Assigns the lowest-numbered available slot automatically.
   - Tracks time-in for each parked vehicle.
-  - Only displays slots that are currently occupied (hides empty slots in the dashboard).
-  - Remove a car from a slot after payment and checkout.
+  - Dashboard only shows occupied slots.
+  - Remove a car after payment and checkout.
 
-- **Payment & Receipt Generation:**
+- **Payment & Receipt Generation**
 
-  - Calculates parking fee automatically based on entry and exit times (50 pesos/hour).
+  - Calculates parking fee automatically (50 pesos/hour).
   - Generates a unique reference number for each transaction.
-  - Accepts payment, computes change, and generates a printable receipt.
-  - Print receipt dialog appears after successful payment.
-  - Clears the slot and removes the car from the dashboard upon checkout.
+  - Accepts cash or QR (digital) payment.
+  - Computes change and generates a printable receipt with QR code.
+  - Clears the slot after successful payment.
 
-- **Service History & Reporting:**
+- **Service History & Reporting**
 
-  - View all past transactions, including car details, amount paid, time in/out, and reference ID.
-  - Displays total revenue earned.
+  - View all past transactions with car details, amount paid, time in/out, and reference ID.
+  - Displays total revenue.
   - Search and filter service history records.
 
-- **Digital Record-Keeping:**  
-  All parking transactions and customer information are securely stored in a database for easy retrieval and improved data management.
+- **Digital Record-Keeping**
 
-- **User-Friendly Interface:**  
-  Intuitive design tailored for attendants, ensuring easy navigation and reducing the learning curve.
+  - All transactions and customer info are stored in a MySQL database.
 
-- **Real-Time Slot Monitoring:**  
-  View the total number of parking spaces and monitor their availability as cars come and go.
+- **User-Friendly Interface**
 
-- **Automated Fee Computation:**  
-  System automatically computes parking fees and change based on duration.
+  - Intuitive Java Swing UI for attendants.
 
-- **Printable Receipts:**  
-  Customers receive digital receipts before exiting, ensuring reliable records and transparency.
+- **Real-Time Slot Monitoring**
+
+  - View total and available parking spaces as cars come and go.
+
+- **Automated Fee Computation**
+
+  - System computes parking fees and change based on duration.
+
+- **Printable Receipts**
+  - Customers receive digital receipts with QR code for transparency.
 
 ## Scope and Limitations
 
 **Scope:**
 
-- Real-time slot monitoring for available and occupied slots.
-- Vehicle logging (plate number, car brand, time in/out).
-- Automated fee computation based on duration.
-- Digital ticketing/receipt for clear transaction records.
-- Database storage for vehicle and transaction records.
-- User-friendly interface for staff.
-- Designed for desktop use (Java Swing).
+- Real-time slot monitoring.
+- Vehicle logging (plate, brand, time in/out).
+- Automated fee computation.
+- Digital ticketing/receipt.
+- Database storage.
+- Desktop use (Java Swing).
 
 **Limitations:**
 
-- **Hardware Compatibility:** Real-time monitoring depends on manual updates or integration with external sensors; without hardware, slot data may be less reliable.
-- **Attendant-Operated Only:** No direct customer or self-service functionality; designed for staff use.
-- **No Advanced Features:** Mobile payment, reservations, and customer self-service are not implemented.
-- **Manual Data Entry:** Relies on attendants to input vehicle information, which may introduce errors.
-- **No Customer Dispute Handling:** Lacks integrated features for managing complaints, disputes, or refunds.
+- No hardware integration (manual updates only).
+- Attendant-operated only (no customer self-service).
+- No mobile payment integration (QR is simulated).
+- Manual data entry by attendants.
+- No customer dispute handling.
 
 ## Programming Languages & Technologies Used
 
@@ -96,38 +98,29 @@ This project was developed as a requirement for **[COMP 009] OBJECT-ORIENTED PRO
 </div>
 
 - **Java** (JDK 15+)
-- **Java Swing** (for GUI)
+- **Java Swing** (GUI)
 - **MySQL** (database)
 - **JDBC** (MySQL Connector/J)
-- **NetBeans IDE** (recommended for development)
-- **Font:** Inter (install manually from `src/assets/font` if desired)
+- **NetBeans IDE** (recommended)
+- **ZXING** (QR code generation)
+- **Font:** Inter (optional, see below)
 
 ## Color Palette Reference
 
-The system uses a carefully selected color palette for clarity, accessibility, and a modern, professional look:
-
-| Color Name             | Hex Code | Usage                                           |
-| ---------------------- | -------- | ----------------------------------------------- |
-| Primary Yellow         | #E6B400  | Main highlights, table headers, sidebar buttons |
-| Accent Gold            | #D4A300  | Borders, revenue panel, accent elements         |
-| Background White       | #FAFAFA  | Main background, panels                         |
-| Text Black             | #141414  | Main text, labels                               |
-| Text Dark Gray         | #333333  | Secondary text, subtle labels                   |
-| Panel Light Gray       | #F2F2F2  | Panel backgrounds, alternate table rows         |
-| Success Green          | #43A047  | Success messages, available slots indicator     |
-| Warning Orange         | #FF9100  | Warnings, attention indicators                  |
-| Error Red              | #E57373  | Error messages, delete actions, revenue border  |
-| Border Gray            | #BDBDBD  | Panel and table borders                         |
-| Table Selection Yellow | #FFECA3  | Table row selection highlight                   |
-| Table Row Alt Yellow   | #FCF3CF  | Alternate table row background                  |
-
-**Why these colors?**
-
-- **Yellow/Gold/Orange:** These colors are mainly used in car parking signage and road markings, making them instantly recognizable and intuitive for users. They are used for highlights, action buttons, table headers, and warnings to create a warm, inviting, and energetic feel, and to make key actions and totals stand out.
-- **Green:** Indicates success and availability, providing clear positive feedback.
-- **Red:** Used for errors and destructive actions (like delete), drawing attention to important warnings.
-- **Gray/White:** Provides a clean, modern, and readable background, reducing eye strain and focusing attention on content.
-- **Consistent palette:** Ensures a professional, cohesive look and improves usability for all users.
+| Color Name             | Hex Code | Usage                                          |
+| ---------------------- | -------- | ---------------------------------------------- |
+| Primary Yellow         | #E6B400  | Highlights, table headers, sidebar buttons     |
+| Accent Gold            | #D4A300  | Borders, revenue panel, accent elements        |
+| Background White       | #FAFAFA  | Main background, panels                        |
+| Text Black             | #141414  | Main text, labels                              |
+| Text Dark Gray         | #333333  | Secondary text, subtle labels                  |
+| Panel Light Gray       | #F2F2F2  | Panel backgrounds, alternate table rows        |
+| Success Green          | #43A047  | Success messages, available slots indicator    |
+| Warning Orange         | #FF9100  | Warnings, attention indicators                 |
+| Error Red              | #E57373  | Error messages, delete actions, revenue border |
+| Border Gray            | #BDBDBD  | Panel and table borders                        |
+| Table Selection Yellow | #FFECA3  | Table row selection highlight                  |
+| Table Row Alt Yellow   | #FCF3CF  | Alternate table row background                 |
 
 ## Installation
 
@@ -137,18 +130,24 @@ The system uses a carefully selected color palette for clarity, accessibility, a
    - JDK 15 or later
    - MySQL Server
    - [mysql-connector-java-8.0.23](https://dev.mysql.com/downloads/connector/j/)
-   - Font: Inter (install manually from `src/assets/font` if desired)
-   - [ZXING Library](https://repo1.maven.org/maven2/com/google/zxing/core/3.5.3/) (core-3.5.3.jar and core-3.5.3-javadoc.jar)
+   - [ZXING Library](https://repo1.maven.org/maven2/com/google/zxing/core/3.5.3/) (core-3.5.3.jar)
+   - Font: Inter (optional, see below)
 
 2. **Database Setup:**
 
-   - Import the provided `parking-db.sql` file to set up tables and initial data.
+   - Import the provided `parkner_db.sql` file to set up tables and initial data.
+   - This file includes initial records for parking slots, parking_store, and sample reports.
 
 3. **Project Setup:**
+
    - Clone or download this repository.
    - Open the project in NetBeans.
-   - Add the MySQL connector JAR to your project's libraries.
+   - **Add all JAR files from the `libraries` folder** to your project's libraries (including MySQL Connector/J and ZXING).
    - Build and run the project.
+
+4. **Fonts and Icons:**
+   - (Optional) Install the Inter font from `src/assets/font` for best appearance.
+   - Ensure all resources in `src/asset/icons` and `src/assets/font` are present.
 
 ## Usage
 
@@ -156,13 +155,13 @@ The system uses a carefully selected color palette for clarity, accessibility, a
   View all currently parked cars, add new cars, and process payments.
 
 - **Parking Slot Management:**  
-  Add, edit, or delete parking slots as needed.
+  Add, edit, or delete parking slots.
 
 - **Service History:**  
   Review all past transactions and monitor total revenue.
 
 - **Receipts:**  
-  Print receipts for each completed transaction.
+  Print receipts for each completed transaction (with QR code for digital payments).
 
 ## Contributors
 

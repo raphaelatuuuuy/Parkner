@@ -483,11 +483,12 @@ public class Main_dashboard extends javax.swing.JFrame {
                         formattedDate = dateInRaw;
                     }
                 }
-                // Add time_in, time_out, reference_id, and formatted date_in to the row
+                // Add payment_method before totalPrice
                 model.addRow(new Object[]{
                     rs.getInt("id"),
                     rs.getString("gen"),
                     rs.getString("regis"),
+                    rs.getString("payment_method"), // <-- payment method column
                     rs.getInt("totalPrice"),
                     formattedDate, // <-- formatted date_in here
                     rs.getString("time_in"),
@@ -499,7 +500,7 @@ public class Main_dashboard extends javax.swing.JFrame {
             System.out.print(ex);
         }
 
-        // Update table headers to include Date
+        // Update table headers to include Payment Method
         JTableHeader theader = table_history.getTableHeader();
         theader.setBackground(COLOR_PRIMARY_YELLOW);
         theader.setForeground(COLOR_TEXT_BLACK);
@@ -984,7 +985,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Parking Slot", "Car Brand", "License Plate", "Amount Paid", "Date", "Time In", "Time Out", "Reference ID"
+                "Parking Slot", "Car Brand", "License Plate", "Payment Method", "Amount Paid", "Date", "Time In", "Time Out", "Reference ID"
             }
         ));
         table_history.setAlignmentX(0.0F);
@@ -1364,7 +1365,7 @@ public class Main_dashboard extends javax.swing.JFrame {
 
             initTableSales();
 
-            JOptionPane.showMessageDialog(this, "Car parked successfully." + "\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Car detail's recorded successfully." + "\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch(SQLException ex){
             System.out.print(ex);
         }

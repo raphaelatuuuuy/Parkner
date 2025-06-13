@@ -17,6 +17,7 @@ import com.google.zxing.common.BitMatrix;
 
 import javax.swing.ImageIcon;
 
+// Receipt window for displaying payment details and QR info
 public class bill extends javax.swing.JFrame {
 
     private static final java.awt.Color COLOR_PRIMARY_YELLOW = new java.awt.Color(230, 180, 0);
@@ -41,16 +42,23 @@ public class bill extends javax.swing.JFrame {
     private javax.swing.JLabel totalTimeValue;
 
     private String qrPaymentInfo = null;
+    private String paymentMethod = "Cash"; // Default
 
     // Show receipt for given referenceId and QR info
     public bill(String referenceId, String qrPaymentInfo) {
+        this(referenceId, qrPaymentInfo, null, null);
+    }
+
+    // Overloaded constructor to support payment method
+    public bill(String referenceId, String qrPaymentInfo, BufferedImage qrImage, String paymentMethod) {
         this.qrPaymentInfo = qrPaymentInfo;
+        if (paymentMethod != null) this.paymentMethod = paymentMethod;
         initComponents();
         Statement st;
         ResultSet rs;
         try {
             st = conn.createStatement();
-            String sql = "SELECT gen, regis, totalPrice, `change`, reference_id, time_in, time_out " +
+            String sql = "SELECT gen, regis, totalPrice, `change`, reference_id, time_in, time_out, payment_method " +
                          "FROM report WHERE reference_id " +
                          (referenceId == null ? "IS NULL" : ("='" + referenceId + "'")) +
                          " AND time_in IS NOT NULL AND time_in <> '' " +
@@ -59,6 +67,7 @@ public class bill extends javax.swing.JFrame {
             rs = st.executeQuery(sql);
 
             boolean found = false;
+            boolean isDigital = false;
             if (rs.next()) {
                 found = true;
                 String carBrand = rs.getString("gen");
@@ -70,6 +79,11 @@ public class bill extends javax.swing.JFrame {
                 String refNum = rs.getString("reference_id");
                 String timeIn = rs.getString("time_in");
                 String timeOut = rs.getString("time_out");
+                String pm = rs.getString("payment_method");
+                if (pm != null && !pm.trim().isEmpty()) {
+                    paymentMethod = pm;
+                }
+                isDigital = "Digital".equalsIgnoreCase(paymentMethod);
 
                 name.setText("");
                 carBrandLabel.setText("Car Brand: " + carBrand);
@@ -105,27 +119,53 @@ public class bill extends javax.swing.JFrame {
                 vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                 total.setText(String.format("P %8.2f", totalValue));
                 total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                changeLabel.setText("Paid:");
-                changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                changeLabel.setBounds(40, 260 + 20, 120, 20);
-                changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
-                changeValueLabel.setBounds(250, 260 + 20, 120, 20);
 
-                javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
-                changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                changeLabel2.setText("Change:");
-                changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                changeLabel2.setName("dyn_changelabel2");
-                jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260 + 45, 120, 20));
-                javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
-                changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                changeValueLabel2.setText(String.format("P %8.2f", changeValue));
-                changeValueLabel2.setName("dyn_changevalue2");
-                jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
+                // Payment Method label/value aligned like others
+                javax.swing.JLabel paymentMethodLabel = new javax.swing.JLabel();
+                paymentMethodLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                paymentMethodLabel.setText("Payment Method:");
+                jPanel1.add(paymentMethodLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 325, 120, 20));
+                javax.swing.JLabel paymentMethodValue = new javax.swing.JLabel();
+                paymentMethodValue.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                paymentMethodValue.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                paymentMethodValue.setText(paymentMethod);
+                jPanel1.add(paymentMethodValue, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 325, 120, 20));
+
+                // Show Paid and Change only for Cash
+                if (!isDigital) {
+                    changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeLabel.setText("Paid:");
+                    changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    changeLabel.setBounds(40, 280, 120, 20);
+                    changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
+                    changeValueLabel.setBounds(250, 280, 120, 20);
+
+                    javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
+                    changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeLabel2.setText("Change:");
+                    changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    changeLabel2.setName("dyn_changelabel2");
+                    jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 355, 120, 20));
+                    javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
+                    changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeValueLabel2.setText(String.format("P %8.2f", changeValue));
+                    changeValueLabel2.setName("dyn_changevalue2");
+                    jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 355, 120, 20));
+                } else {
+                    // Show Paid for digital/QR, but not Change
+                    changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeLabel.setText("Paid:");
+                    changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    changeLabel.setBounds(40, 280, 120, 20);
+                    changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                    changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                    changeValueLabel.setText(String.format("P %8.2f", priceValue));
+                    changeValueLabel.setBounds(250, 280, 120, 20);
+                    // Do not show "Change" for digital/QR
+                }
 
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
                 LocalDateTime now = LocalDateTime.now();
@@ -148,6 +188,11 @@ public class bill extends javax.swing.JFrame {
                     String refNum = rs.getString("reference_id");
                     String timeIn = rs.getString("time_in");
                     String timeOut = rs.getString("time_out");
+                    String pm = rs.getString("payment_method");
+                    if (pm != null && !pm.trim().isEmpty()) {
+                        paymentMethod = pm;
+                    }
+                    isDigital = "Digital".equalsIgnoreCase(paymentMethod);
 
                     name.setText("");
                     carBrandLabel.setText("Car Brand: " + carBrand);
@@ -166,27 +211,41 @@ public class bill extends javax.swing.JFrame {
                     vat.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
                     total.setText(String.format("P %8.2f", totalValue));
                     total.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                    changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                    changeLabel.setText("Paid:");
-                    changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                    changeLabel.setBounds(40, 260 + 20, 120, 20);
-                    changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                    changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                    changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
-                    changeValueLabel.setBounds(250, 260 + 20, 120, 20);
 
-                    javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
-                    changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                    changeLabel2.setText("Change:");
-                    changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-                    changeLabel2.setName("dyn_changelabel2");
-                    jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 260 + 45, 120, 20));
-                    javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
-                    changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
-                    changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-                    changeValueLabel2.setText(String.format("P %8.2f", changeValue));
-                    changeValueLabel2.setName("dyn_changevalue2");
-                    jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 260 + 45, 120, 20));
+                    // Payment Method label
+                    javax.swing.JLabel paymentMethodLabel = new javax.swing.JLabel();
+                    paymentMethodLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.BOLD, 13));
+                    paymentMethodLabel.setText("Payment Method: " + paymentMethod);
+                    paymentMethodLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                    jPanel1.add(paymentMethodLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 370, 250, 20));
+
+                    // Show Paid and Change only for Cash
+                    if (!isDigital) {
+                        changeLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                        changeLabel.setText("Paid:");
+                        changeLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                        changeLabel.setBounds(40, 280, 120, 20);
+                        changeValueLabel.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                        changeValueLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                        changeValueLabel.setText(String.format("P %8.2f", priceValue + changeValue));
+                        changeValueLabel.setBounds(250, 280, 120, 20);
+
+                        javax.swing.JLabel changeLabel2 = new javax.swing.JLabel();
+                        changeLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                        changeLabel2.setText("Change:");
+                        changeLabel2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+                        changeLabel2.setName("dyn_changelabel2");
+                        jPanel1.add(changeLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 305, 120, 20));
+                        javax.swing.JLabel changeValueLabel2 = new javax.swing.JLabel();
+                        changeValueLabel2.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 12));
+                        changeValueLabel2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+                        changeValueLabel2.setText(String.format("P %8.2f", changeValue));
+                        changeValueLabel2.setName("dyn_changevalue2");
+                        jPanel1.add(changeValueLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 305, 120, 20));
+                    } else {
+                        changeLabel.setText("");
+                        changeValueLabel.setText("");
+                    }
 
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy - h:mm a");
                     LocalDateTime now = LocalDateTime.now();
@@ -212,43 +271,34 @@ public class bill extends javax.swing.JFrame {
 
             // After setting up all labels, show QR info if present
             if (qrPaymentInfo != null && !qrPaymentInfo.trim().isEmpty()) {
-                // Generate QR code image (enlarged to 200x200)
-                BufferedImage qrImage = null;
-                try {
-                    QRCodeWriter qrWriter = new QRCodeWriter();
-                    BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 200, 200);
-                    qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
-                    for (int x = 0; x < 200; x++) {
-                        for (int y = 0; y < 200; y++) {
-                            qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                // Use only one variable for the QR image
+                BufferedImage qrImageToShow = qrImage;
+                if (qrImageToShow == null) {
+                    try {
+                        QRCodeWriter qrWriter = new QRCodeWriter();
+                        BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 200, 200);
+                        qrImageToShow = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+                        for (int x = 0; x < 200; x++) {
+                            for (int y = 0; y < 200; y++) {
+                                qrImageToShow.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                            }
                         }
-                    }
-                } catch (WriterException e) {}
-                // Remove any previous QR label to avoid duplicates
-                for (java.awt.Component comp : jPanel1.getComponents()) {
-                    if (comp instanceof javax.swing.JLabel && "qrReceiptLabel".equals(comp.getName())) {
-                        jPanel1.remove(comp);
-                    }
-                    if (comp instanceof javax.swing.JLabel && "qrTextLabel".equals(comp.getName())) {
-                        jPanel1.remove(comp);
-                    }
+                    } catch (WriterException e) {}
                 }
                 javax.swing.JLabel qrReceiptLabel = new javax.swing.JLabel();
-                qrReceiptLabel.setName("qrReceiptLabel");
-                qrReceiptLabel.setBounds(100, 420, 200, 200); // Centered for 200x200
-                if (qrImage != null) {
-                    qrReceiptLabel.setIcon(new ImageIcon(qrImage));
+                qrReceiptLabel.setBounds(100, 370, 200, 200); // Centered for 200x200
+                if (qrImageToShow != null) {
+                    qrReceiptLabel.setIcon(new ImageIcon(qrImageToShow));
                 } else {
                     qrReceiptLabel.setText("QR Error");
                 }
                 qrReceiptLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
                 qrReceiptLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-                jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 420, 200, 200));
+                jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 370, 200, 200));
                 javax.swing.JLabel qrText = new javax.swing.JLabel("QR Payment Info");
-                qrText.setName("qrTextLabel");
                 qrText.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 10));
                 qrText.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-                jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 620, 200, 20));
+                jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 570, 200, 20));
             }
         } catch(SQLException ex){
             System.out.print(ex);
@@ -257,30 +307,7 @@ public class bill extends javax.swing.JFrame {
 
     // Add this constructor to support (referenceId, qrPaymentInfo, qrImage)
     public bill(String referenceId, String qrPaymentInfo, BufferedImage qrImage) {
-        this(referenceId, qrPaymentInfo); // call the main constructor to set up the bill
-        if (qrImage != null) {
-            // Remove any previous QR label to avoid duplicates
-            for (java.awt.Component comp : jPanel1.getComponents()) {
-                if (comp instanceof javax.swing.JLabel && "qrReceiptLabel".equals(comp.getName())) {
-                    jPanel1.remove(comp);
-                }
-                if (comp instanceof javax.swing.JLabel && "qrTextLabel".equals(comp.getName())) {
-                    jPanel1.remove(comp);
-                }
-            }
-            javax.swing.JLabel qrReceiptLabel = new javax.swing.JLabel();
-            qrReceiptLabel.setName("qrReceiptLabel");
-            qrReceiptLabel.setBounds(100, 420, 200, 200); // Centered for 200x200
-            qrReceiptLabel.setIcon(new ImageIcon(qrImage));
-            qrReceiptLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-            qrReceiptLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-            jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 420, 200, 200));
-            javax.swing.JLabel qrText = new javax.swing.JLabel("QR Payment Info");
-            qrText.setName("qrTextLabel");
-            qrText.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 10));
-            qrText.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-            jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 620, 200, 20));
-        }
+        this(referenceId, qrPaymentInfo, qrImage, null);
     }
 
     // Default constructor
@@ -397,11 +424,11 @@ public class bill extends javax.swing.JFrame {
         date.setFont(billSubHeaderFont);
         date.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         date.setText("Date:");
-        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 370, 400, 20));
+        jPanel1.add(date, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 375, 400, 20));
 
         // Set window size and center
         int receiptWidth = 400;
-        int receiptHeight = 660; // Increased height to fit larger QR image
+        int receiptHeight = 620; // Increased height to fit larger QR image and payment method
         setPreferredSize(new java.awt.Dimension(receiptWidth, receiptHeight));
         setMinimumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
         setMaximumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
