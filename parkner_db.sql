@@ -37,7 +37,7 @@ CREATE TABLE `parking_slot` (
 
 LOCK TABLES `parking_slot` WRITE;
 /*!40000 ALTER TABLE `parking_slot` DISABLE KEYS */;
-INSERT INTO `parking_slot` VALUES (1,1),(2,1),(3,0);
+INSERT INTO `parking_slot` VALUES (1,1),(2,1),(3,1),(4,1),(5,1);
 /*!40000 ALTER TABLE `parking_slot` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -63,10 +63,6 @@ CREATE TABLE `parking_store` (
 
 LOCK TABLES `parking_store` WRITE;
 /*!40000 ALTER TABLE `parking_store` DISABLE KEYS */;
-INSERT INTO `parking_store` (`gen`, `regis`, `reference_id`, `time_in`, `date_in`) VALUES
-('Toyota', 'ABC123', 12345678, '08:00 AM', '2025-06-12'),
-('Honda', 'XYZ789', 87654321, '09:30 AM', '2025-06-12'),
-('', '', NULL, '', '');
 /*!40000 ALTER TABLE `parking_store` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -89,7 +85,7 @@ CREATE TABLE `report` (
   `date_in` text,
   `qr_info` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -98,9 +94,9 @@ CREATE TABLE `report` (
 
 LOCK TABLES `report` WRITE;
 /*!40000 ALTER TABLE `report` DISABLE KEYS */;
-INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`) VALUES
-(1, 'Toyota', 'ABC123', 100, 0.00, 12345678, '08:00 AM', '10:00 AM', '2025-06-12'),
-(2, 'Honda', 'XYZ789', 50, 0.00, 87654321, '09:30 AM', '10:30 AM', '2025-06-12');
+INSERT INTO `report` (`id`, `gen`, `regis`, `totalPrice`, `change`, `reference_id`, `time_in`, `time_out`, `date_in`, `qr_info`) VALUES
+(1, 'Toyota', 'ABC123', 100, 0.00, 10000001, '08:00 AM', '10:00 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000001\nCar: Toyota\nPlate: ABC123\nAmount: 100 pesos'),
+(2, 'Honda', 'XYZ789', 50, 0.00, 10000002, '09:30 AM', '10:30 AM', '2025-06-13', 'PARKNER PAY\nReference: 10000002\nCar: Honda\nPlate: XYZ789\nAmount: 50 pesos');
 /*!40000 ALTER TABLE `report` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -123,7 +119,7 @@ CREATE TABLE `totalprice` (
 
 LOCK TABLES `totalprice` WRITE;
 /*!40000 ALTER TABLE `totalprice` DISABLE KEYS */;
-INSERT INTO `totalprice` (`id`, `price`) VALUES (1, 50);
+INSERT INTO `totalprice` VALUES (1,50);
 /*!40000 ALTER TABLE `totalprice` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -136,4 +132,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-12  0:21:24
+-- Dump completed on 2025-06-13 17:31:48

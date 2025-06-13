@@ -39,6 +39,9 @@ public class receip extends javax.swing.JFrame {
     private boolean qrPaid = false; // Track if QR payment was made
     private String qrPaymentInfo = null; // Store QR payment info
 
+    // Store the last generated QR image for receipt printing
+    private BufferedImage lastQrImage = null;
+
     // Constructor for payment window with details
     public receip(String referenceId, String carBrand, String licensePlate, int totalPrice, javax.swing.JFrame parentDashboard) {
         initComponents();
@@ -119,23 +122,28 @@ public class receip extends javax.swing.JFrame {
         jButton1.setBackground(new java.awt.Color(152, 16, 30));
         jButton1.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setText("Confirm");
+        jButton1.setText("Pay Cash"); // Changed label
         jButton1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jButton1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jButton1MouseClicked(evt);
             }
         });
-        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 160, 110, -1));
+        // Widen and center the button
+        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 160, 260, 40));
 
         jLabel2.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setText("Change");
-        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 250, -1, -1));
+        // Widen and center the Change label
+        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 250, 120, 30));
 
         receip_show.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         receip_show.setForeground(new java.awt.Color(51, 204, 0));
-        jPanel1.add(receip_show, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 250, 180, 30));
+        // Widen and center the Change value
+        receip_show.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        // Widened from 190 to 260, and moved left to 100 for better centering
+        jPanel1.add(receip_show, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 250, 260, 30));
 
         btn_print.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         btn_print.setText("Print Receipt");
@@ -144,7 +152,7 @@ public class receip extends javax.swing.JFrame {
                 btn_printMouseClicked(evt);
             }
         });
-        // Widen the button and center it
+        // Widen and center the button
         jPanel1.add(btn_print, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 310, 260, 40));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -195,8 +203,8 @@ public class receip extends javax.swing.JFrame {
                 btn_qrpayMouseClicked(evt);
             }
         });
-        // Place QR Pay button above Confirm
-        jPanel1.add(btn_qrpay, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 200, 110, 35));
+        // Widen and center the button
+        jPanel1.add(btn_qrpay, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 210, 260, 40));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -212,18 +220,11 @@ public class receip extends javax.swing.JFrame {
         pack();
     }// </editor-fold>                        
 
-    // Handle Confirm button click for payment
-    // This function processes the payment and saves the transaction
+    // Handle Pay Cash button click for payment
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
-        // If QR payment is required, only allow if paid
-        if (btn_qrpay.isVisible() && !qrPaid) {
-            receip_show.setText("Please pay via QR or enter cash.");
-            btn_print.setVisible(false);
-            return;
-        }
-        // Validate payment input
         String payText = pay.getText().trim();
         double paidAmount = 0;
+        boolean paidByCash = false;
         try {
             paidAmount = Double.parseDouble(payText);
             if (paidAmount < totalPrice) {
@@ -231,123 +232,252 @@ public class receip extends javax.swing.JFrame {
                 btn_print.setVisible(false);
                 return;
             }
+            paidByCash = true;
         } catch (NumberFormatException e) {
-            if (!qrPaid) { // Only error if not paid via QR
+            receip_show.setText("Invalid Amount");
+            btn_print.setVisible(false);
+            return;
+        }
+        // Always validate amount, even for QR
+        if (paidAmount < totalPrice) {
+            receip_show.setText("Insufficient Amount");
+            btn_print.setVisible(false);
+            return;
+        }
+        double change = paidAmount - totalPrice;
+        receip_show.setText(change > 0 ? (change + " pesos") : "0 pesos");
+        btn_print.setVisible(true);
+
+        // --- Ensure QR image is generated for Pay Cash ---
+        if (lastQrImage == null) {
+            // Generate QR content if not already set
+            if (qrPaymentInfo == null) {
+                qrPaymentInfo = "PARKNER PAY\nReference: " + (referenceId != null ? referenceId : "N/A")
+                    + "\nCar: " + (carBrand != null ? carBrand : "")
+                    + "\nPlate: " + (licensePlate != null ? licensePlate : "")
+                    + "\nAmount: " + totalPrice + " pesos";
+            }
+            try {
+                QRCodeWriter qrWriter = new QRCodeWriter();
+                BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 200, 200);
+                BufferedImage qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+                for (int x = 0; x < 200; x++) {
+                    for (int y = 0; y < 200; y++) {
+                        qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                    }
+                }
+                lastQrImage = qrImage;
+            } catch (WriterException e) {}
+        }
+        // --- end ensure QR image ---
+
+        processPayment(change, true); // true = show confirm dialog
+    }//GEN-LAST:event_jButton1MouseClicked
+
+    // --- QR Pay Button Handler ---
+    private void btn_qrpayMouseClicked(java.awt.event.MouseEvent evt) {
+        String qrContent = "PARKNER PAY\nReference: " + (referenceId != null ? referenceId : "N/A")
+                + "\nCar: " + (carBrand != null ? carBrand : "")
+                + "\nPlate: " + (licensePlate != null ? licensePlate : "")
+                + "\nAmount: " + totalPrice + " pesos";
+        qrPaymentInfo = qrContent;
+
+        BufferedImage qrImage = null;
+        try {
+            QRCodeWriter qrWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrWriter.encode(qrContent, BarcodeFormat.QR_CODE, 200, 200);
+            qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+            // Fill white background first
+            for (int x = 0; x < 200; x++) {
+                for (int y = 0; y < 200; y++) {
+                    qrImage.setRGB(x, y, 0xFFFFFFFF);
+                }
+            }
+            // Draw QR code
+            for (int x = 0; x < 200; x++) {
+                for (int y = 0; y < 200; y++) {
+                    if (bitMatrix.get(x, y)) {
+                        qrImage.setRGB(x, y, 0xFF000000);
+                    }
+                }
+            }
+        } catch (WriterException e) {}
+
+        lastQrImage = qrImage; // Save for printing
+
+        javax.swing.JDialog qrDialog = new javax.swing.JDialog(this, "Scan QR to Pay", true);
+        qrDialog.setSize(350, 500); // More height for QR
+        qrDialog.setResizable(false);
+        qrDialog.setLayout(null);
+
+        javax.swing.JLabel qrLabel = new javax.swing.JLabel();
+        qrLabel.setBounds(75, 30, 200, 200);
+        if (qrImage != null) {
+            qrLabel.setIcon(new ImageIcon(qrImage));
+        } else {
+            qrLabel.setText("QR Code Error");
+            qrLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            qrLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+        }
+        qrDialog.add(qrLabel);
+
+        javax.swing.JLabel info = new javax.swing.JLabel("<html><center>Scan this QR code with your banking app to pay.<br>Amount: " + totalPrice + " pesos</center></html>");
+        info.setBounds(20, 240, 310, 40);
+        info.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        qrDialog.add(info);
+
+        javax.swing.JButton btnSimulate = new javax.swing.JButton("Simulate Payment");
+        btnSimulate.setBounds(105, 300, 140, 40);
+        btnSimulate.setBackground(COLOR_SUCCESS_GREEN);
+        btnSimulate.setForeground(COLOR_BG_WHITE);
+        btnSimulate.addActionListener(e -> {
+            qrPaid = true;
+            pay.setText(String.valueOf(totalPrice));
+            // Validate amount before processing
+            double paidAmount = 0;
+            try {
+                paidAmount = Double.parseDouble(pay.getText().trim());
+            } catch (NumberFormatException ex) {
                 receip_show.setText("Invalid Amount");
                 btn_print.setVisible(false);
+                qrDialog.dispose();
+                return;
+            }
+            if (paidAmount < totalPrice) {
+                receip_show.setText("Insufficient Amount");
+                btn_print.setVisible(false);
+                qrDialog.dispose();
+                return;
+            }
+            receip_show.setText("QR Payment Received");
+            btn_print.setVisible(true);
+            qrDialog.dispose();
+            // Process payment immediately, no confirm dialog
+            processPayment(0.0, false); // false = no confirm dialog
+        });
+        qrDialog.add(btnSimulate);
+
+        qrDialog.setLocationRelativeTo(this);
+        qrDialog.setVisible(true);
+    }
+
+    // --- Payment processing logic for both cash and QR ---
+    private void processPayment(double change, boolean showConfirmDialog) {
+        // Prevent double processing
+        if (btn_print.isVisible() && !btn_print.isEnabled()) return;
+        btn_print.setEnabled(false);
+
+        if (showConfirmDialog) {
+            int confirm = javax.swing.JOptionPane.showConfirmDialog(this, "Confirm payment?", "Confirm", javax.swing.JOptionPane.YES_NO_OPTION);
+            if (confirm != javax.swing.JOptionPane.YES_OPTION) {
+                btn_print.setVisible(false);
+                btn_print.setEnabled(true);
                 return;
             }
         }
-
-        double change = paidAmount - totalPrice;
-        receip_show.setText(change > 0 ? (change + " pesos") : "0 pesos");
-        btn_print.setVisible(true); // Show Print Receipt button after successful payment
-
-        // Confirm payment dialog
-        int confirm = javax.swing.JOptionPane.showConfirmDialog(this, "Confirm payment?", "Confirm", javax.swing.JOptionPane.YES_NO_OPTION);
-        if (confirm == javax.swing.JOptionPane.YES_OPTION) {
-            Statement st;
-            ResultSet rs;
-            try {
-                // Get reference and time info from parking_store
-                String refId = referenceId;
-                String timeIn = "";
-                String dateIn = "";
-                String refSql = "SELECT reference_id, time_in, date_in FROM parking_store WHERE reference_id " +
-                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'"));
-                st = conn.createStatement();
-                rs = st.executeQuery(refSql);
-                if (rs.next()) {
-                    refId = rs.getString("reference_id");
-                    timeIn = rs.getString("time_in");
-                    dateIn = rs.getString("date_in");
+        Statement st;
+        ResultSet rs;
+        try {
+            // Always fetch car details from parking_store before clearing
+            String refId = referenceId;
+            String timeIn = "";
+            String dateIn = "";
+            String carBrandDb = carBrand;
+            String licensePlateDb = licensePlate;
+            String refSql = "SELECT gen, regis, reference_id, time_in, date_in FROM parking_store WHERE reference_id " +
+                    ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'"));
+            st = conn.createStatement();
+            rs = st.executeQuery(refSql);
+            if (rs.next()) {
+                if (rs.getString("gen") != null && !rs.getString("gen").trim().isEmpty())
+                    carBrandDb = rs.getString("gen");
+                if (rs.getString("regis") != null && !rs.getString("regis").trim().isEmpty())
+                    licensePlateDb = rs.getString("regis");
+                refId = rs.getString("reference_id");
+                timeIn = rs.getString("time_in");
+                dateIn = rs.getString("date_in");
+            }
+            // Fallback: if timeIn or dateIn is empty, try to get from report or use current
+            if (timeIn == null || timeIn.trim().isEmpty()) {
+                ResultSet rs2 = st.executeQuery("SELECT time_in FROM report WHERE reference_id " +
+                    ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
+                    " AND time_in IS NOT NULL AND time_in <> '' ORDER BY id DESC LIMIT 1");
+                if (rs2.next()) {
+                    timeIn = rs2.getString("time_in");
                 }
-                // Fallback: if timeIn or dateIn is empty, try to get from report or use current
                 if (timeIn == null || timeIn.trim().isEmpty()) {
-                    ResultSet rs2 = st.executeQuery("SELECT time_in FROM report WHERE reference_id " +
-                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
-                        " AND time_in IS NOT NULL AND time_in <> '' ORDER BY id DESC LIMIT 1");
-                    if (rs2.next()) {
-                        timeIn = rs2.getString("time_in");
-                    }
-                    if (timeIn == null || timeIn.trim().isEmpty()) {
-                        timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
-                    }
+                    timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+                }
+            }
+            if (dateIn == null || dateIn.trim().isEmpty()) {
+                ResultSet rs2 = st.executeQuery("SELECT date_in FROM report WHERE reference_id " +
+                    ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
+                    " AND date_in IS NOT NULL AND date_in <> '' ORDER BY id DESC LIMIT 1");
+                if (rs2.next()) {
+                    dateIn = rs2.getString("date_in");
                 }
                 if (dateIn == null || dateIn.trim().isEmpty()) {
-                    ResultSet rs2 = st.executeQuery("SELECT date_in FROM report WHERE reference_id " +
-                        ((refId == null || refId.trim().isEmpty()) ? "IS NULL" : ("='" + refId + "'")) +
-                        " AND date_in IS NOT NULL AND date_in <> '' ORDER BY id DESC LIMIT 1");
-                    if (rs2.next()) {
-                        dateIn = rs2.getString("date_in");
-                    }
-                    if (dateIn == null || dateIn.trim().isEmpty()) {
-                        dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
-                    }
+                    dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
                 }
-                lastReferenceId = refId;
-                String timeOut = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
-
-                // Get next id for report table
-                int nextId = 1;
-                rs = st.executeQuery("SELECT MAX(id) FROM report");
-                if (rs.next()) {
-                    int maxId = rs.getInt(1);
-                    if (!rs.wasNull()) {
-                        nextId = maxId + 1;
-                    }
-                }
-
-                // Insert payment record into report
-                // Always quote string values, even if empty
-                String refIdValue = (refId == null) ? "NULL" : ("'" + refId + "'");
-                String timeInValue = (timeIn == null) ? "''" : ("'" + timeIn + "'");
-                String timeOutValue = (timeOut == null) ? "''" : ("'" + timeOut + "'");
-                String dateInValue = (dateIn == null) ? "''" : ("'" + dateIn + "'");
-                // Add qrPaymentInfo as 'qr_info' column (add this column to your report table)
-                String qrInfoValue = (qrPaymentInfo == null) ? "NULL" : ("'" + qrPaymentInfo.replace("'", "''") + "'");
-                String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in, qr_info) VALUES (" +
-                        nextId + ", '" + carBrand + "', '" + licensePlate + "', " + totalPrice + ", " + change + ", " +
-                        refIdValue + ", " +
-                        timeInValue + ", " +
-                        timeOutValue + ", " +
-                        dateInValue + ", " +
-                        qrInfoValue + ")";
-                System.out.println("DEBUG: refId=" + refId + ", timeIn=" + timeIn + ", dateIn=" + dateIn + ", timeOut=" + timeOut);
-                st.executeUpdate(sql);
-
-                // Mark parking slot as available again (clear car details)
-                if (refId != null && !refId.trim().isEmpty()) {
-                    sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id='" + refId + "'";
-                } else {
-                    sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id IS NULL";
-                }
-                st.executeUpdate(sql);
-
-                // Refresh dashboard after payment
-                if (parentDashboard instanceof Main_dashboard) {
-                    Main_dashboard dash = (Main_dashboard) parentDashboard;
-                    dash.sales_id_out.setText("");
-                    dash.sales_gen_out.setText("");
-                    dash.sales_regis_out.setText("");
-                    dash.sales_hours.setText("");
-                    dash.initTableManage();
-                    dash.initTableSales();
-                    dash.refreshTotalRevenue();
-                }
-            } catch (SQLException ex) {
-                System.out.print(ex);
             }
-        } else {
-            btn_print.setVisible(false);
+            lastReferenceId = refId;
+            String timeOut = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+
+            // Get next id for report table
+            int nextId = 1;
+            rs = st.executeQuery("SELECT MAX(id) FROM report");
+            if (rs.next()) {
+                int maxId = rs.getInt(1);
+                if (!rs.wasNull()) {
+                    nextId = maxId + 1;
+                }
+            }
+
+            // Insert payment record into report
+            String refIdValue = (refId == null) ? "NULL" : ("'" + refId + "'");
+            String timeInValue = (timeIn == null) ? "''" : ("'" + timeIn + "'");
+            String timeOutValue = (timeOut == null) ? "''" : ("'" + timeOut + "'");
+            String dateInValue = (dateIn == null) ? "''" : ("'" + dateIn + "'");
+            String qrInfoValue = (qrPaymentInfo == null) ? "NULL" : ("'" + qrPaymentInfo.replace("'", "''") + "'");
+            String sql = "INSERT INTO report (id, gen, regis, totalPrice, `change`, reference_id, time_in, time_out, date_in, qr_info) VALUES (" +
+                    nextId + ", '" + carBrandDb + "', '" + licensePlateDb + "', " + totalPrice + ", " + change + ", " +
+                    refIdValue + ", " +
+                    timeInValue + ", " +
+                    timeOutValue + ", " +
+                    dateInValue + ", " +
+                    qrInfoValue + ")";
+            st.executeUpdate(sql);
+
+            // Mark parking slot as available again (clear car details)
+            if (refId != null && !refId.trim().isEmpty()) {
+                sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id='" + refId + "'";
+            } else {
+                sql = "UPDATE parking_store SET gen='', regis='', time_in='', date_in='', reference_id=NULL WHERE reference_id IS NULL";
+            }
+            st.executeUpdate(sql);
+
+            // Refresh dashboard after payment
+            if (parentDashboard instanceof Main_dashboard) {
+                Main_dashboard dash = (Main_dashboard) parentDashboard;
+                dash.sales_id_out.setText("");
+                dash.sales_gen_out.setText("");
+                dash.sales_regis_out.setText("");
+                dash.sales_hours.setText("");
+                dash.initTableManage();
+                dash.initTableSales();
+                dash.refreshTotalRevenue();
+            }
+        } catch (SQLException ex) {
+            System.out.print(ex);
         }
-    }//GEN-LAST:event_jButton1MouseClicked
+        btn_print.setEnabled(true);
+    }
 
     // Handle Print Receipt button click
     // This function prints the receipt after payment
     private void btn_printMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btn_printMouseClicked
-        // Show the bill window and print dialog when Print Receipt is clicked
-        bill billWindow = new bill(lastReferenceId, qrPaymentInfo); // Pass QR info
+        // Always pass the lastQrImage to the bill window
+        bill billWindow = new bill(lastReferenceId, qrPaymentInfo, lastQrImage); // Pass QR info and QR image
         billWindow.pack();
         billWindow.setLocationRelativeTo(null);
 
@@ -379,68 +509,6 @@ public class receip extends javax.swing.JFrame {
         // Optionally close the payment window after printing
         dispose();
     }//GEN-LAST:event_btn_printMouseClicked
-
-    // --- QR Pay Button Handler ---
-    private void btn_qrpayMouseClicked(java.awt.event.MouseEvent evt) {
-        // Generate QR code content (e.g., payment info)
-        String qrContent = "PARKNER PAY\nReference: " + (referenceId != null ? referenceId : "N/A")
-                + "\nCar: " + (carBrand != null ? carBrand : "")
-                + "\nPlate: " + (licensePlate != null ? licensePlate : "")
-                + "\nAmount: " + totalPrice + " pesos";
-        qrPaymentInfo = qrContent; // Save for receipt
-
-        // Generate QR code image using ZXing
-        BufferedImage qrImage = null;
-        try {
-            QRCodeWriter qrWriter = new QRCodeWriter();
-            BitMatrix bitMatrix = qrWriter.encode(qrContent, BarcodeFormat.QR_CODE, 200, 200);
-            qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
-            for (int x = 0; x < 200; x++) {
-                for (int y = 0; y < 200; y++) {
-                    qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
-                }
-            }
-        } catch (WriterException e) {
-            // fallback: no QR
-        }
-
-        javax.swing.JDialog qrDialog = new javax.swing.JDialog(this, "Scan QR to Pay", true);
-        qrDialog.setSize(320, 400);
-        qrDialog.setResizable(false);
-        qrDialog.setLayout(null);
-
-        javax.swing.JLabel qrLabel = new javax.swing.JLabel();
-        qrLabel.setBounds(60, 30, 200, 200);
-        if (qrImage != null) {
-            qrLabel.setIcon(new ImageIcon(qrImage));
-        } else {
-            qrLabel.setText("QR Code Error");
-            qrLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-            qrLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-        }
-        qrDialog.add(qrLabel);
-
-        javax.swing.JLabel info = new javax.swing.JLabel("<html><center>Scan this QR code with your banking app to pay.<br>Amount: " + totalPrice + " pesos</center></html>");
-        info.setBounds(20, 240, 280, 40);
-        info.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        qrDialog.add(info);
-
-        javax.swing.JButton btnSimulate = new javax.swing.JButton("Simulate Payment");
-        btnSimulate.setBounds(90, 300, 140, 35);
-        btnSimulate.setBackground(COLOR_SUCCESS_GREEN);
-        btnSimulate.setForeground(COLOR_BG_WHITE);
-        btnSimulate.addActionListener(e -> {
-            qrPaid = true;
-            pay.setText(String.valueOf(totalPrice)); // Auto-fill amount
-            receip_show.setText("QR Payment Received");
-            btn_print.setVisible(true);
-            qrDialog.dispose();
-        });
-        qrDialog.add(btnSimulate);
-
-        qrDialog.setLocationRelativeTo(this);
-        qrDialog.setVisible(true);
-    }
 
     // Main method for testing
     public static void main(String args[]) {

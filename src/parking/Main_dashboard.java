@@ -1376,9 +1376,8 @@ public class Main_dashboard extends javax.swing.JFrame {
     String selectedReferenceId; // Use this instead of id if reference_id is unique
     private void table_salesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_salesMouseClicked
         // Adjusted for new column order (with Running Time column)
-        // No parking slot needed, use regis, gen, and time_in to find the car
         int selectedRow = table_sales.getSelectedRow();
-        if (selectedRow < 0) return;
+        if (selectedRow < 0) return; 
 
         String regisVal = (String) table_sales.getValueAt(selectedRow, 1);
         String genVal = (String) table_sales.getValueAt(selectedRow, 2);
@@ -1502,33 +1501,18 @@ public class Main_dashboard extends javax.swing.JFrame {
         receip receiptWindow = new receip(selectedReferenceId, gen, regis, totalPrice, this);
         receiptWindow.setVisible(true);
 
-        // --- Clear car details after payment ---
-        try {
-            // Clear car details in parking_store for this reference_id
-            String sql = "UPDATE parking_store SET gen='', regis='', time_in='', reference_id=NULL, date_in='' WHERE reference_id='" + selectedReferenceId + "'";
-            PreparedStatement pt = conn.prepareStatement(sql);
-            pt.execute();
-
-            // Remove all rows from the dashboard table (table_sales)
-            DefaultTableModel model = (DefaultTableModel) table_sales.getModel();
-            model.setRowCount(0);
-
-            initTableManage();
-            // Do NOT call initTableSales() here, as it would reload all rows
-            // Optionally clear the output fields
-            sales_gen_out.setText("");
-            sales_regis_out.setText("");
-            sales_hours.setText("");
-            sales_btn_pay.setText("Pay");
-            setReturnCarFieldsEnabled(false);
-        } catch (SQLException ex) {
-            System.out.print(ex);
-        }
+        // --- Do NOT clear car details or remove rows here. Let receip handle it after payment. ---
+        // Optionally clear the output fields (for UI)
+        sales_gen_out.setText("");
+        sales_regis_out.setText("");
+        sales_hours.setText("");
+        sales_btn_pay.setText("Pay");
+        setReturnCarFieldsEnabled(false);
     }//GEN-LAST:event_sales_btn_payMouseClicked
 
     // Handles click on a row in the history table
     private void table_historyMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_table_historyMouseClicked
-        // TODO add your handling code here:
+       
     }//GEN-LAST:event_table_historyMouseClicked
 
     // Main method to run the dashboard

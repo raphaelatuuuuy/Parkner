@@ -212,20 +212,30 @@ public class bill extends javax.swing.JFrame {
 
             // After setting up all labels, show QR info if present
             if (qrPaymentInfo != null && !qrPaymentInfo.trim().isEmpty()) {
-                // Generate QR code image
+                // Generate QR code image (enlarged to 200x200)
                 BufferedImage qrImage = null;
                 try {
                     QRCodeWriter qrWriter = new QRCodeWriter();
-                    BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 100, 100);
-                    qrImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-                    for (int x = 0; x < 100; x++) {
-                        for (int y = 0; y < 100; y++) {
+                    BitMatrix bitMatrix = qrWriter.encode(qrPaymentInfo, BarcodeFormat.QR_CODE, 200, 200);
+                    qrImage = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+                    for (int x = 0; x < 200; x++) {
+                        for (int y = 0; y < 200; y++) {
                             qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
                         }
                     }
                 } catch (WriterException e) {}
+                // Remove any previous QR label to avoid duplicates
+                for (java.awt.Component comp : jPanel1.getComponents()) {
+                    if (comp instanceof javax.swing.JLabel && "qrReceiptLabel".equals(comp.getName())) {
+                        jPanel1.remove(comp);
+                    }
+                    if (comp instanceof javax.swing.JLabel && "qrTextLabel".equals(comp.getName())) {
+                        jPanel1.remove(comp);
+                    }
+                }
                 javax.swing.JLabel qrReceiptLabel = new javax.swing.JLabel();
-                qrReceiptLabel.setBounds(150, 390, 100, 100);
+                qrReceiptLabel.setName("qrReceiptLabel");
+                qrReceiptLabel.setBounds(100, 420, 200, 200); // Centered for 200x200
                 if (qrImage != null) {
                     qrReceiptLabel.setIcon(new ImageIcon(qrImage));
                 } else {
@@ -233,14 +243,43 @@ public class bill extends javax.swing.JFrame {
                 }
                 qrReceiptLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
                 qrReceiptLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-                jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 390, 100, 100));
+                jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 420, 200, 200));
                 javax.swing.JLabel qrText = new javax.swing.JLabel("QR Payment Info");
+                qrText.setName("qrTextLabel");
                 qrText.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 10));
                 qrText.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-                jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 490, 100, 20));
+                jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 620, 200, 20));
             }
         } catch(SQLException ex){
             System.out.print(ex);
+        }
+    }
+
+    // Add this constructor to support (referenceId, qrPaymentInfo, qrImage)
+    public bill(String referenceId, String qrPaymentInfo, BufferedImage qrImage) {
+        this(referenceId, qrPaymentInfo); // call the main constructor to set up the bill
+        if (qrImage != null) {
+            // Remove any previous QR label to avoid duplicates
+            for (java.awt.Component comp : jPanel1.getComponents()) {
+                if (comp instanceof javax.swing.JLabel && "qrReceiptLabel".equals(comp.getName())) {
+                    jPanel1.remove(comp);
+                }
+                if (comp instanceof javax.swing.JLabel && "qrTextLabel".equals(comp.getName())) {
+                    jPanel1.remove(comp);
+                }
+            }
+            javax.swing.JLabel qrReceiptLabel = new javax.swing.JLabel();
+            qrReceiptLabel.setName("qrReceiptLabel");
+            qrReceiptLabel.setBounds(100, 420, 200, 200); // Centered for 200x200
+            qrReceiptLabel.setIcon(new ImageIcon(qrImage));
+            qrReceiptLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            qrReceiptLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+            jPanel1.add(qrReceiptLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 420, 200, 200));
+            javax.swing.JLabel qrText = new javax.swing.JLabel("QR Payment Info");
+            qrText.setName("qrTextLabel");
+            qrText.setFont(new java.awt.Font("Courier New", java.awt.Font.PLAIN, 10));
+            qrText.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            jPanel1.add(qrText, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 620, 200, 20));
         }
     }
 
@@ -362,7 +401,7 @@ public class bill extends javax.swing.JFrame {
 
         // Set window size and center
         int receiptWidth = 400;
-        int receiptHeight = 420;
+        int receiptHeight = 660; // Increased height to fit larger QR image
         setPreferredSize(new java.awt.Dimension(receiptWidth, receiptHeight));
         setMinimumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
         setMaximumSize(new java.awt.Dimension(receiptWidth, receiptHeight));
