@@ -22,24 +22,16 @@ USE `parking`;
 --
 
 DROP TABLE IF EXISTS `parking_slot`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `parking_slot` (
-  `slot` int NOT NULL,
-  `status` tinyint(1) DEFAULT NULL,
-  PRIMARY KEY (`slot`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `id` INT NOT NULL PRIMARY KEY DEFAULT 1,
+  `total_slots` INT NOT NULL,
+  `maintenance_reserved` INT NOT NULL,
+  `occupied` INT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- Dumping data for table `parking_slot`
---
-
-LOCK TABLES `parking_slot` WRITE;
-/*!40000 ALTER TABLE `parking_slot` DISABLE KEYS */;
-INSERT INTO `parking_slot` VALUES (1,0),(2,1),(3,0),(4,0),(5,1);
-/*!40000 ALTER TABLE `parking_slot` ENABLE KEYS */;
-UNLOCK TABLES;
+-- Only one row should exist:
+-- Set occupied to 3, matching the 3 initial records in parking_store
+INSERT INTO `parking_slot` (`id`, `total_slots`, `maintenance_reserved`, `occupied`) VALUES (1, 50, 0, 3);
 
 --
 -- Table structure for table `parking_store`

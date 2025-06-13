@@ -463,6 +463,19 @@ public class receip extends javax.swing.JFrame {
             }
             st.executeUpdate(sql);
 
+            // --- Update occupied count in parking_slot table ---
+            Statement st2 = conn.createStatement();
+            ResultSet rsSlot = st2.executeQuery("SELECT occupied FROM parking_slot WHERE id=1");
+            if (rsSlot.next()) {
+                int occ = rsSlot.getInt(1);
+                if (occ > 0) {
+                    occ = occ - 1;
+                    if (occ < 0) occ = 0;
+                    st2.executeUpdate("UPDATE parking_slot SET occupied=" + occ + " WHERE id=1");
+                }
+            }
+            // --- end update occupied ---
+
             // Refresh dashboard after payment
             if (parentDashboard instanceof Main_dashboard) {
                 Main_dashboard dash = (Main_dashboard) parentDashboard;
@@ -470,9 +483,10 @@ public class receip extends javax.swing.JFrame {
                 dash.sales_gen_out.setText("");
                 dash.sales_regis_out.setText("");
                 dash.sales_hours.setText("");
-                dash.initTableManage();
+                dash.initTableManage(); // refresh manage panel
                 dash.initTableSales();
                 dash.refreshTotalRevenue();
+                dash.refreshAvailableSlots(); // update available slots
             }
         } catch (SQLException ex) {
             System.out.print(ex);

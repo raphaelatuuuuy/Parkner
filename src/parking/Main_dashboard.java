@@ -61,6 +61,13 @@ public class Main_dashboard extends javax.swing.JFrame {
     private javax.swing.JLabel dateTimeLabel = new javax.swing.JLabel();
     private Timer dateTimeTimer;
 
+    // Additional fields for Manage panel
+    private javax.swing.JTextField manage_totalSlotsField = new javax.swing.JTextField();
+    private javax.swing.JTextField manage_maintenanceField = new javax.swing.JTextField();
+    private javax.swing.JLabel manage_occupiedLabel = new javax.swing.JLabel();
+    private javax.swing.JLabel manage_availableLabel = new javax.swing.JLabel();
+    private javax.swing.JButton manage_saveBtn = new javax.swing.JButton();
+
     // Constructor: sets up the dashboard and UI
     public Main_dashboard() {
         // Setup UI and tables
@@ -311,11 +318,15 @@ public class Main_dashboard extends javax.swing.JFrame {
 
         int availableSlotCount = 0;
         try{
-            // Count available slots from parking_slot
+            // Count available slots from summary table, not per-slot status
             Statement stSlot = conn.createStatement();
-            ResultSet rsSlot = stSlot.executeQuery("SELECT COUNT(*) FROM parking_slot WHERE status=1");
+            ResultSet rsSlot = stSlot.executeQuery("SELECT total_slots, maintenance_reserved, occupied FROM parking_slot WHERE id=1");
             if (rsSlot.next()) {
-                availableSlotCount = rsSlot.getInt(1);
+                int total = rsSlot.getInt("total_slots");
+                int maint = rsSlot.getInt("maintenance_reserved");
+                int occ = rsSlot.getInt("occupied");
+                availableSlotCount = total - maint - occ;
+                if (availableSlotCount < 0) availableSlotCount = 0;
             }
 
             st = (Statement) conn.createStatement();
@@ -407,51 +418,175 @@ public class Main_dashboard extends javax.swing.JFrame {
 
     // Loads the table with parking slot status
     public void initTableManage(){
-        DefaultTableModel model = (DefaultTableModel) table_manage.getModel();
-        model.setRowCount(0);
-        manage_num_row = 1;
+        // Remove all components from panel_manage
+        panel_manage.removeAll();
+        panel_manage.setLayout(null);
 
-        Statement st;
-        ResultSet rs;
-
-        try{
-            st = (Statement) conn.createStatement();
-            // Use parking_slot table
-            String sql = "SELECT slot, status FROM parking_slot";
-            rs = st.executeQuery(sql);
-            while(rs.next()){
-                // If status is INT, convert to string for display
-                String status = rs.getInt("status") == 1 ? "Available" : "Unavailable";
-                model.addRow(new Object[]{rs.getInt("slot"), status});
-                manage_num_row++;
+        // Fetch current slot info from DB
+        int totalSlots = 0, maintenance = 0, occupied = 0, available = 0;
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT total_slots, maintenance_reserved, occupied FROM parking_slot WHERE id=1");
+            if (rs.next()) {
+                totalSlots = rs.getInt("total_slots");
+                maintenance = rs.getInt("maintenance_reserved");
+                occupied = rs.getInt("occupied");
+                available = totalSlots - maintenance - occupied;
+                if (available < 0) available = 0;
             }
-        } catch(SQLException ex){
-            System.out.print(ex);
-        }
+        } catch (SQLException ex) {}
 
-        //Header column
-        JTableHeader theader = table_manage.getTableHeader();
-        theader.setBackground(COLOR_PRIMARY_YELLOW);
-        theader.setForeground(COLOR_TEXT_BLACK);
-        theader.setFont(new Font("Inter", Font.PLAIN, 18));
-        theader.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
-        // Center header text
-        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) theader.getDefaultRenderer();
-        headerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        // --- Improved UI Layout ---
+        int panelW = panel_manage.getWidth() > 0 ? panel_manage.getWidth() : 890;
+        int panelH = panel_manage.getHeight() > 0 ? panel_manage.getHeight() : 630;
+        int formW = 420, formH = 340;
+        int formX = (panelW - formW) / 2;
+        int formY = (panelH - formH) / 2;
 
-        // Change column header to "Parking Slot"
-        table_manage.getColumnModel().getColumn(0).setHeaderValue("Parking Slot");
-        table_manage.getColumnModel().getColumn(1).setHeaderValue("Status");
+        javax.swing.JPanel formPanel = new javax.swing.JPanel();
+        formPanel.setLayout(null);
+        formPanel.setBounds(formX, formY, formW, formH);
+        formPanel.setBackground(COLOR_BG_WHITE);
+        formPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            javax.swing.BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 3, true),
+            javax.swing.BorderFactory.createEmptyBorder(16, 16, 16, 16)
+        ));
 
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment( JLabel.CENTER );
-        table_manage.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        table_manage.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        java.awt.Font titleFont = new java.awt.Font("Inter", java.awt.Font.BOLD, 24);
+        java.awt.Font labelFont = new java.awt.Font("Inter", java.awt.Font.BOLD, 16);
+        java.awt.Font fieldFont = new java.awt.Font("Inter", java.awt.Font.PLAIN, 18);
+        java.awt.Font valueFont = new java.awt.Font("Inter", java.awt.Font.BOLD, 18);
 
-        table_manage.setRowHeight(30);
-        table_manage.setFont(new Font("Inter", Font.PLAIN, 16));
-        // Apply alternate row renderer after updating model
-        applyAlternateRowRenderer(table_manage);
+        // Title
+        javax.swing.JLabel title = new javax.swing.JLabel("Parking Slot Management");
+        title.setFont(titleFont);
+        title.setForeground(COLOR_PRIMARY_YELLOW);
+        title.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        title.setBounds(0, 10, formW, 36);
+        formPanel.add(title);
+
+        int y = 60, spacing = 48, labelW = 210, fieldW = 120, h = 34;
+
+        // Total Slots
+        javax.swing.JLabel totalLabel = new javax.swing.JLabel("Total Parking Slots:");
+        totalLabel.setFont(labelFont);
+        totalLabel.setBounds(30, y, labelW, h);
+        formPanel.add(totalLabel);
+
+        manage_totalSlotsField.setFont(fieldFont);
+        manage_totalSlotsField.setBounds(250, y, fieldW, h);
+        manage_totalSlotsField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        manage_totalSlotsField.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 1, true));
+        manage_totalSlotsField.setBackground(COLOR_PANEL_LIGHTGRAY);
+        manage_totalSlotsField.setText(String.valueOf(totalSlots));
+        formPanel.add(manage_totalSlotsField);
+
+        y += spacing;
+
+        // Maintenance/Reserved
+        javax.swing.JLabel maintLabel = new javax.swing.JLabel("Maintenance/Reserved:");
+        maintLabel.setFont(labelFont);
+        maintLabel.setBounds(30, y, labelW, h);
+        formPanel.add(maintLabel);
+
+        manage_maintenanceField.setFont(fieldFont);
+        manage_maintenanceField.setBounds(250, y, fieldW, h);
+        manage_maintenanceField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        manage_maintenanceField.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_BORDER_GRAY, 1, true));
+        manage_maintenanceField.setBackground(COLOR_PANEL_LIGHTGRAY);
+        manage_maintenanceField.setText(String.valueOf(maintenance));
+        formPanel.add(manage_maintenanceField);
+
+        y += spacing;
+
+        // Occupied (display only)
+        javax.swing.JLabel occLabel = new javax.swing.JLabel("Occupied Spots:");
+        occLabel.setFont(labelFont);
+        occLabel.setBounds(30, y, labelW, h);
+        formPanel.add(occLabel);
+
+        manage_occupiedLabel.setFont(valueFont);
+        manage_occupiedLabel.setBounds(250, y, fieldW, h);
+        manage_occupiedLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        manage_occupiedLabel.setForeground(COLOR_ERROR_RED);
+        manage_occupiedLabel.setBackground(COLOR_PANEL_LIGHTGRAY);
+        manage_occupiedLabel.setOpaque(true);
+        manage_occupiedLabel.setText(String.valueOf(occupied));
+        formPanel.add(manage_occupiedLabel);
+
+        y += spacing;
+
+        // Available (display only)
+        javax.swing.JLabel availLabel = new javax.swing.JLabel("Available Spots:");
+        availLabel.setFont(labelFont);
+        availLabel.setBounds(30, y, labelW, h);
+        formPanel.add(availLabel);
+
+        // Widen the available spots label to fit large numbers/text
+        manage_availableLabel.setFont(valueFont);
+        manage_availableLabel.setBounds(250, y, fieldW, h); // widened by 60px
+        manage_availableLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        manage_availableLabel.setForeground(COLOR_SUCCESS_GREEN);
+        manage_availableLabel.setBackground(COLOR_PANEL_LIGHTGRAY);
+        manage_availableLabel.setOpaque(true);
+        manage_availableLabel.setText(String.valueOf(available));
+        formPanel.add(manage_availableLabel);
+
+        // Save button
+        manage_saveBtn.setFont(new java.awt.Font("Inter", java.awt.Font.BOLD, 18));
+        manage_saveBtn.setText("Save");
+        manage_saveBtn.setBackground(COLOR_PRIMARY_YELLOW);
+        manage_saveBtn.setForeground(COLOR_TEXT_BLACK);
+        manage_saveBtn.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 2, true));
+        manage_saveBtn.setBounds((formW - 140) / 2, formH - 60, 140, 40);
+        formPanel.add(manage_saveBtn);
+
+        // Save button action
+        manage_saveBtn.addActionListener(e -> {
+            // Only show one dialog at a time
+            try {
+                int newTotal = Integer.parseInt(manage_totalSlotsField.getText().trim());
+                int newMaint = Integer.parseInt(manage_maintenanceField.getText().trim());
+                int occ = Integer.parseInt(manage_occupiedLabel.getText().trim());
+                if (newTotal < 0 || newMaint < 0) {
+                    JOptionPane.showMessageDialog(this, "Values cannot be negative.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (newMaint > newTotal) {
+                    JOptionPane.showMessageDialog(this, "Maintenance/Reserved cannot exceed Total Parking Slots.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (occ > (newTotal - newMaint)) {
+                    JOptionPane.showMessageDialog(this, "Occupied spots cannot exceed available slots.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                // Save to DB
+                PreparedStatement pt = conn.prepareStatement("UPDATE parking_slot SET total_slots=?, maintenance_reserved=? WHERE id=1");
+                pt.setInt(1, newTotal);
+                pt.setInt(2, newMaint);
+                pt.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Parking slot settings saved.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                // Refresh UI
+                initTableManage();
+                refreshAvailableSlots();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Please enter valid numbers.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add a subtle shadow/border for the panel
+        formPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            javax.swing.BorderFactory.createLineBorder(COLOR_ACCENT_GOLD, 3, true),
+            javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        // Add the form panel to the manage panel
+        panel_manage.add(formPanel);
+        panel_manage.setBackground(COLOR_PANEL_LIGHTGRAY);
+        panel_manage.repaint();
+        panel_manage.revalidate();
     }
 
     // Loads the service history table
@@ -1193,6 +1328,7 @@ public class Main_dashboard extends javax.swing.JFrame {
         try{
             String status = combo.getSelectedItem().toString();
             int statusValue = "Available".equals(status) ? 1 : 0;
+            // Only update the status column by slot (do not use status in WHERE)
             String sql = "UPDATE parking_slot SET status = ? WHERE slot = ?";
             pt = conn.prepareStatement(sql);
             pt.setInt(1, statusValue);
@@ -1306,71 +1442,90 @@ public class Main_dashboard extends javax.swing.JFrame {
 
     // Handles Add Car button click
     private void sales_btnAddMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sales_btnAddMouseClicked
-    // If button is disabled, show dialog and return
-    if (!sales_btnAdd.isEnabled()) {
-        JOptionPane.showMessageDialog(this, "No parking slots available. Please add more slots or wait for a slot to be vacated.", "No Parking Slot Available", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    // Add validation for empty car brand or license plate
-    String carBrand = sales_gen.getText();
-    String licensePlate = sales_regis.getText();
-    if(carBrand.trim().isEmpty() || licensePlate.trim().isEmpty()){
-        JOptionPane.showMessageDialog(this, "Car Brand and License Plate cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // Just add car details to parking_store, do not update parking_slot or include slot/status
-    // (Assume available slot logic is handled elsewhere, e.g., by limiting Add button)
-    // Generate unique 8-digit reference number
-    String refNumber = "";
-    Random rand = new Random();
-    boolean unique = false;
-    while (!unique) {
-        int num = 10000000 + rand.nextInt(90000000); // 8-digit
-        refNumber = String.valueOf(num);
+        // Check available slots from summary table
+        int totalSlots = 0, maintenance = 0, occupied = 0, available = 0;
         try {
             Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM parking_store WHERE reference_id='" + refNumber + "'");
-            if (rs.next() && rs.getInt(1) == 0) {
-                unique = true;
+            ResultSet rs = st.executeQuery("SELECT total_slots, maintenance_reserved, occupied FROM parking_slot WHERE id=1");
+            if (rs.next()) {
+                totalSlots = rs.getInt("total_slots");
+                maintenance = rs.getInt("maintenance_reserved");
+                occupied = rs.getInt("occupied");
+                available = totalSlots - maintenance - occupied;
             }
         } catch (SQLException ex) {
-            System.out.print(ex);
-            break;
+            JOptionPane.showMessageDialog(this, "Database error while checking available slots.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-    }
-
-    // Get current time for Time In
-    String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
-    // Get current date for Date In
-    String dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
-
-    // Confirmation dialog (no slot info)
-    String confirmMsg = "Please confirm the following details:\n"
-            + "Car Brand: " + carBrand + "\n"
-            + "License Plate: " + licensePlate + "\n\n"
-            + "Is this information correct?";
-    int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
-    if (confirm == JOptionPane.YES_OPTION) {
-        PreparedStatement pt = null;
-        try{
-            String sql = "INSERT INTO parking_store (gen, regis, reference_id, time_in, date_in) VALUES (?, ?, ?, ?, ?)";
-            pt = conn.prepareStatement(sql);
-            pt.setString(1, carBrand);
-            pt.setString(2, licensePlate);
-            pt.setString(3, refNumber);
-            pt.setString(4, timeIn);
-            pt.setString(5, dateIn);
-            pt.executeUpdate();
-
-            initTableSales();
-
-            JOptionPane.showMessageDialog(this, "Car detail's recorded successfully." + "\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
-        } catch(SQLException ex){
-            System.out.print(ex);
+        if (available <= 0) {
+            JOptionPane.showMessageDialog(this, "No parking slots available. Please add more slots or wait for a slot to be vacated.", "No Parking Slot Available", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-    }
-}//GEN-LAST:event_sales_btnAddMouseClicked
+
+        // Add validation for empty car brand or license plate
+        String carBrand = sales_gen.getText();
+        String licensePlate = sales_regis.getText();
+        if(carBrand.trim().isEmpty() || licensePlate.trim().isEmpty()){
+            JOptionPane.showMessageDialog(this, "Car Brand and License Plate cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Generate unique 8-digit reference number
+        String refNumber = "";
+        Random rand = new Random();
+        boolean unique = false;
+        while (!unique) {
+            int num = 10000000 + rand.nextInt(90000000); // 8-digit
+            refNumber = String.valueOf(num);
+            try {
+                Statement st = conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM parking_store WHERE reference_id='" + refNumber + "'");
+                if (rs.next() && rs.getInt(1) == 0) {
+                    unique = true;
+                }
+            } catch (SQLException ex) {
+                System.out.print(ex);
+                break;
+            }
+        }
+
+        // Get current time for Time In
+        String timeIn = new SimpleDateFormat("hh:mm a").format(new java.util.Date());
+        // Get current date for Date In
+        String dateIn = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
+
+        // Confirmation dialog (no slot info)
+        String confirmMsg = "Please confirm the following details:\n"
+                + "Car Brand: " + carBrand + "\n"
+                + "License Plate: " + licensePlate + "\n\n"
+                + "Is this information correct?";
+        int confirm = JOptionPane.showConfirmDialog(this, confirmMsg, "Confirm Car Details", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            PreparedStatement pt = null;
+            try{
+                // Insert car into parking_store
+                String sql = "INSERT INTO parking_store (gen, regis, reference_id, time_in, date_in) VALUES (?, ?, ?, ?, ?)";
+                pt = conn.prepareStatement(sql);
+                pt.setString(1, carBrand);
+                pt.setString(2, licensePlate);
+                pt.setString(3, refNumber);
+                pt.setString(4, timeIn);
+                pt.setString(5, dateIn);
+                pt.executeUpdate();
+
+                // Increment occupied in summary table
+                PreparedStatement pt2 = conn.prepareStatement("UPDATE parking_slot SET occupied = occupied + 1 WHERE id=1");
+                pt2.executeUpdate();
+
+                initTableSales();
+                refreshAvailableSlots();
+
+                JOptionPane.showMessageDialog(this, "Car detail's recorded successfully." + "\n\nReference Number: " + refNumber + "\nTime In: " + timeIn, "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch(SQLException ex){
+                System.out.print(ex);
+            }
+        }
+    }//GEN-LAST:event_sales_btnAddMouseClicked
 
     // Handles click on a row in the sales table
     String gen, regis;
@@ -1466,7 +1621,7 @@ public class Main_dashboard extends javax.swing.JFrame {
     // Enables or disables the Pay & Exit fields
     private void setReturnCarFieldsEnabled(boolean enabled) {
         // Remove parking slot field logic
-        sales_id_out.setEnabled(false); // always disabled (output only, not used)
+        sales_id_out.setEnabled(false); // always disabled (output only)
         sales_gen_out.setEnabled(false); // always disabled (output only)
         sales_regis_out.setEnabled(false); // always disabled (output only)
         sales_hours.setEnabled(false); // always disabled, just for display
@@ -1686,5 +1841,25 @@ public class Main_dashboard extends javax.swing.JFrame {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("'Today is' MMMM d, yyyy, h:mm:ss a");
         String now = sdf.format(new java.util.Date());
         dateTimeLabel.setText(now);
+    }
+
+    // Add this method to refresh available slots display
+    public void refreshAvailableSlots() {
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SELECT total_slots, maintenance_reserved, occupied FROM parking_slot WHERE id=1");
+            if (rs.next()) {
+                int total = rs.getInt("total_slots");
+                int maint = rs.getInt("maintenance_reserved");
+                int occ = rs.getInt("occupied");
+                int avail = total - maint - occ;
+                availableSlotsLabel.setText("Available Slots: " + Math.max(avail, 0));
+                // Also update manage panel if visible
+                manage_occupiedLabel.setText(String.valueOf(occ));
+                manage_availableLabel.setText(String.valueOf(Math.max(avail, 0)));
+            }
+        } catch (SQLException ex) {
+            availableSlotsLabel.setText("Available Slots: ?");
+        }
     }
 }
