@@ -23,32 +23,27 @@ This project was developed for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under 
 
 - **Parking Slot Management**
 
-  - Add, update, or remove parking slots.
-  - View all slots and their statuses (Available/Unavailable).
-  - Change slot status.
-  - Only allow deletion of unoccupied slots.
+  - Manage total slots, maintenance/reserved slots, and occupied slots via a summary table.
+  - Easily adjust total and maintenance slots from the dashboard.
+  - Occupied slots are updated automatically as cars enter/exit.
 
-- **Vehicle Entry & Exit**
+- **Car Parking and Payment**
 
-  - Park a car by entering car brand and license plate.
-  - Assigns the lowest-numbered available slot automatically.
-  - Tracks time-in for each parked vehicle.
-  - Dashboard only shows occupied slots.
-  - Remove a car after payment and checkout.
+  - Add cars to the parking lot with car brand and license plate.
+  - Each car is assigned a unique reference number.
+  - Pay for parking using either Cash or Digital (QR code) payment.
+  - Receipts display payment details, payment method, and a QR code for digital payments.
 
-- **Payment & Receipt Generation**
+- **Service History**
 
-  - Calculates parking fee automatically (50 pesos/hour).
-  - Generates a unique reference number for each transaction.
-  - Accepts cash or QR (digital) payment.
-  - Computes change and generates a printable receipt with QR code.
-  - Clears the slot after successful payment.
-
-- **Service History & Reporting**
-
-  - View all past transactions with car details, amount paid, time in/out, and reference ID.
-  - Displays total revenue.
+  - View all past transactions, including car details, payment method, amount paid, date, time in/out, and reference ID.
   - Search and filter service history records.
+  - Total revenue is displayed and updated in real time.
+
+- **Receipts**
+
+  - Receipts show car details, time in/out, total time, VAT, total amount, payment method, and QR code (for digital payments).
+  - Print receipts directly from the application.
 
 - **Digital Record-Keeping**
 
@@ -155,10 +150,10 @@ This project was developed for **[COMP 009] OBJECT-ORIENTED PROGRAMMING** under 
   View all currently parked cars, add new cars, and process payments.
 
 - **Parking Slot Management:**  
-  Add, edit, or delete parking slots.
+  Manage total and maintenance slots in the Manage panel. Occupied slots update automatically.
 
 - **Service History:**  
-  Review all past transactions and monitor total revenue.
+  View all past transactions, including payment method, and monitor total revenue.
 
 - **Receipts:**  
   Print receipts for each completed transaction (with QR code for digital payments).
